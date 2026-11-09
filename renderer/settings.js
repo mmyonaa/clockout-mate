@@ -3,6 +3,8 @@ const $ = (id) => document.getElementById(id);
 
 const form = $('form');
 const offTime = $('offTime');
+const startTime = $('startTime');
+const workHoursOnly = $('workHoursOnly');
 const scale = $('scale');
 const cheers = $('cheers');
 const autoLaunch = $('autoLaunch');
@@ -92,6 +94,8 @@ function fill(settings) {
   limits = settings.limits;
   renderCharacters(settings.character);
   offTime.value = settings.offTime;
+  startTime.value = settings.startTime;
+  workHoursOnly.checked = settings.workHoursOnly;
   scale.min = limits.scaleMin;
   scale.max = limits.scaleMax;
   scale.value = settings.scale;
@@ -122,15 +126,22 @@ async function load() {
   }
 }
 
-offTime.addEventListener('change', () => {
-  // 시각을 지우거나 일부만 채우면 값이 빈 문자열이 된다
-  if (!offTime.value) {
-    setError(offTime, '퇴근 시각을 시와 분까지 입력해 주세요.');
-    return;
-  }
-  setError(offTime, '');
-  save({ offTime: offTime.value });
-});
+function bindTime(input, label) {
+  input.addEventListener('change', () => {
+    // 시각을 지우거나 일부만 채우면 값이 빈 문자열이 된다
+    if (!input.value) {
+      setError(input, `${label}을 시와 분까지 입력해 주세요.`);
+      return;
+    }
+    setError(input, '');
+    save({ [input.id]: input.value });
+  });
+}
+
+bindTime(offTime, '퇴근 시각');
+bindTime(startTime, '출근 시각');
+
+workHoursOnly.addEventListener('change', () => save({ workHoursOnly: workHoursOnly.checked }));
 
 scale.addEventListener('input', () => {
   showScale();

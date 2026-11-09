@@ -33,15 +33,16 @@
     `M${n(cx - 4.2)} ${n(cy - 2)} l-1.2 4 M${n(cx - 0.8)} ${n(cy - 2.6)} l-1.4 5.2 ` +
     `M${n(cx + 2.6)} ${n(cy - 2.6)} l-1.4 5.2 M${n(cx + 5.8)} ${n(cy - 2)} l-1.2 4`;
 
-  // 얼굴은 모든 캐릭터가 같은 문법을 쓴다: 눈(뜬 눈·감은 눈, 웃는 캐릭터는 눈웃음까지)과 입 두 벌(다문 입·벌린 입)을
+  // 얼굴은 모든 캐릭터가 같은 문법을 쓴다: 눈(뜬 눈, 웃는 캐릭터는 눈웃음까지)과 입 두 벌(다문 입·벌린 입)을
   // 모두 그려 두고, 조건에 따라 CSS 가 하나씩만 보여 준다.
   //   eye: 눈 중심 { dx: 가운데에서의 거리, y, r }
   //   blush: 볼터치 { dx, y, rx, ry }
   //   eye.style: 눈 모양 (위 eye 함수 참고)
   //   brows: 눈썹 선. 없는 캐릭터는 빈 문자열
   //   happyEyes / happyBrows: 웃는 얼굴의 눈·눈썹 선. 주기적으로 웃는 캐릭터만 준다
+  //   extra: 그 캐릭터만 가진 입 모양 등 덧붙일 조각. 언제 보일지는 character.css 가 정한다
   //   closed / open: 다문 입과 벌린 입의 SVG 조각. 입 모양은 캐릭터마다 달라서 각자 넘긴다
-  const face = ({ brows, eye: e, blush: b, closed, open, happyEyes, happyBrows }) => {
+  const face = ({ brows, eye: e, blush: b, closed, open, happyEyes, happyBrows, extra = '' }) => {
     const [lx, rx] = [n(60 - e.dx), n(60 + e.dx)];
     return `
     <g class="blush">
@@ -53,10 +54,9 @@
     ${happyBrows ? `<path class="line brows brows-happy" d="${happyBrows}" />` : ''}
     <g class="eyes-open">${eye(lx, e.y, e.r, e.style)}${eye(rx, e.y, e.r, e.style)}</g>
     ${happyEyes ? `<path class="line eyes-happy" d="${happyEyes}" />` : ''}
-    <path class="line eyes-sad" d="M${n(lx - 5)} ${n(e.y - 0.8)} Q${lx} ${n(e.y + 3.8)} ${n(lx + 5)} ${n(e.y - 0.8)} M${n(rx - 5)} ${n(e.y - 0.8)} Q${rx} ${n(e.y + 3.8)} ${n(rx + 5)} ${n(e.y - 0.8)}" />
-    <path class="tear" d="M${n(rx + 4)} ${n(e.y + 3.4)} q-3 5 0 6.6 q3 -1.6 0 -6.6 Z" />
     <g class="mouth-closed">${closed}</g>
-    <g class="mouth-open">${open}</g>`;
+    <g class="mouth-open">${open}</g>
+    ${extra}`;
   };
 
   // top: viewBox 의 위쪽 끝. 귀·뿔이 0 위로 올라가는 만큼 음수로 준다
@@ -70,6 +70,9 @@
   const BODY_LOWER =
     'C104.4 57.8 101.48 64.17 98.23 70.5 C101.5 71.5 104 76 103 79.5 C102 83 96.5 84.8 91.6 84.3 Q90.9 86 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 Q29.1 86 28.4 84.3 C23.5 84.8 18 83 17 79.5 C16 76 18.5 71.5 21.77 70.5 C18.52 64.17 15.6 57.8 15.6 50.8';
   const BODY = `C98 28 104.4 38 104.4 50.8 ${BODY_LOWER} C15.6 38 22 28 30 23 Z`;
+  // 왼쪽(보는 쪽 기준) 팔만 없는 몸. 그 팔을 들어 올려 몸 앞에서 무언가를 쥔 자세에 쓴다
+  const BODY_LEFT_ARM_UP =
+    'C98 28 104.4 38 104.4 50.8 C104.4 57.8 101.48 64.17 98.23 70.5 C101.5 71.5 104 76 103 79.5 C102 83 96.5 84.8 91.6 84.3 Q90.9 86 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 C26 75 15.6 64 15.6 50.8 C15.6 38 22 28 30 23 Z';
   // 발은 몸 위에 그려 몸 아랫선을 덮는다. 그래야 몸에서 그대로 이어져 내려온 것처럼 보인다
   // 팔이 없는 몸 윤곽. 팔을 몸 앞으로 모은 자세(팔짱)에 쓴다. 시작·끝점은 BODY 와 같다.
   // 팔이 가려 주지 않으므로 머리와 몸의 경계가 드러난다: 볼이 아래로 둥글게 말려 들어간 뒤 (93.5,71.5) 에서 꺾여 몸이 내려간다
@@ -110,6 +113,8 @@
         closed: `<path class="line" d="M54.8 53.2 C55 56.8 58.4 57.6 59.2 55 L60 52.6 L60.8 55 C61.6 57.6 65 56.8 65.2 53.2" />
           <path class="line" d="M58.4 60.4 h3.2" />`,
         open: tongueMouth(49.5),
+        // 웃는 얼굴은 character/하치/하치_5.webp 를 잰 값이다: 눈 자리에 위로 볼록한 호, 입은 혀가 보이게 벌린다(눈썹은 평소 그대로)
+        happyEyes: 'M42.2 44.2 Q46.2 40 50.2 44.2 M69.8 44.2 Q73.8 40 77.8 44.2',
       }),
   );
 
@@ -165,7 +170,10 @@
   );
 
   // 쿠리만쥬: 머리 위로 낮고 넓게 솟은 갈색 밤 무늬, 무늬 아래 모서리에서 양옆으로 나온 작은 귀, 점 같은 눈.
-  // 입을 벌리면 입 위에 잔털이 선다
+  // 입을 벌리면 입 위에 잔털이 선다. 평소에는 가끔 "캬아" 얼굴이 된다(character/쿠리/쿠리_캬아_2.jpg):
+  // 입 위와 입가의 잔주름, 양 끝이 말려 올라간 윗입술 아래로 크게 벌어진 입(윗니·아랫니·혀), 턱 선, 옆으로 튄 노란 방울.
+  // 이때 왼팔을 들어 입 옆으로 캔을 든다: 옆으로 나온 왼팔이 없는 몸으로 바꿔 끼우고, 캔을 그린 뒤 그 위에 손을 덧그려 쥔 것처럼 보이게 한다
+  // (캔 모양은 character/쿠리/ 의 피규어 사진 참고)
   const KURI_TOP = 'C35 15.5 46 11.5 60 11.5 C74 11.5 85 15.5 90 23';
 
   const kuri = svg(
@@ -173,7 +181,8 @@
     0,
     `<ellipse class="fur" cx="21.5" cy="27.5" rx="6.6" ry="4.6" transform="rotate(-24 21.5 27.5)" />
     <ellipse class="fur" cx="98.5" cy="27.5" rx="6.6" ry="4.6" transform="rotate(24 98.5 27.5)" />
-    <path class="fur" d="M30 23 ${KURI_TOP} ${BODY}" />
+    <path class="fur hide-on-kyaa" d="M30 23 ${KURI_TOP} ${BODY}" />
+    <path class="fur only-kyaa" d="M30 23 ${KURI_TOP} ${BODY_LEFT_ARM_UP}" />
     <path class="brown" d="M30 23 ${KURI_TOP} Q60 37.5 30 23 Z" />
     ${FEET}` +
       face({
@@ -183,6 +192,26 @@
         closed: omega(52.8),
         open: `<path class="line whiskers" d="M54.6 48.6 l-1.4 -2.6 M58.2 48 l-0.5 -2.8 M61.8 48 l0.5 -2.8 M65.4 48.6 l1.4 -2.6" />
           ${tongueMouth(50.6)}`,
+        extra: `<g class="only-kyaa">
+          <g transform="rotate(-14 42.6 64.6)">
+            <rect class="can" x="37.4" y="56.8" width="10.4" height="15.6" rx="2.2" />
+            <path class="can-rim" d="M38.6 59.2 h8 M38.6 70.2 h8" />
+            <text class="can-text" x="42.6" y="65.9">BEER</text>
+          </g>
+          <ellipse class="fur" cx="38.6" cy="71.4" rx="4.8" ry="3.8" />
+        </g>
+        <g class="only-kyaa" transform="translate(0 0.4)">
+          <path class="line whiskers" d="M53.4 44 q1.2 1.2 0.9 2.6 M55.8 43.4 q1 1.3 0.6 2.8 M58.2 43.2 q0.7 1.3 0.3 2.6 M61.8 43.2 q-0.7 1.3 -0.3 2.6 M64.2 43.4 q-1 1.3 -0.6 2.8 M66.6 44 q-1.2 1.2 -0.9 2.6 M58.2 48.2 h3.6 M58.8 49.6 h2.4 M50.6 50 l-1.8 -0.7 M50.4 51.8 l-2 0.1 M69.4 50 l1.8 -0.7 M69.6 51.8 l2 0.1" />
+        </g>
+        <g class="only-kyaa" transform="translate(0 3.4)">
+          <path class="mouth-dark" d="M55.6 54.4 C55.2 60 56.8 65.2 60 65.2 C63.2 65.2 64.8 60 64.4 54.4 Z" />
+          <ellipse class="tongue-flat" cx="60" cy="61.4" rx="2.5" ry="2.6" />
+          <path class="teeth" d="M56.5 54.9 h7 v2 h-7 Z M58 63 h4 v1.3 h-4 Z" />
+          <path class="tooth-gap" d="M58.25 54.9 v2 M60 54.9 v2 M61.75 54.9 v2" />
+          <path class="line" d="M52.6 51.8 C52.2 54.4 54.6 55.4 56.4 54.2 C58 53.2 58.8 52.4 60 52.4 C61.2 52.4 62 53.2 63.6 54.2 C65.4 55.4 67.8 54.4 67.4 51.8" />
+          <path class="line" d="M58.6 68.2 q1.4 0.8 2.8 0" />
+          <rect class="drop" x="69.4" y="57.6" width="2.8" height="4" rx="1.3" />
+        </g>`,
       }),
   );
 
@@ -205,11 +234,11 @@
         brows: 'M43.6 39.1 l3.4 1.1 M76.4 39.1 l-3.4 1.1 M58.2 37.4 v2 M61.8 37.4 v2',
         eye: { dx: 12.8, y: 48, r: 5, style: 'double' },
         blush: { dx: 23.4, y: 55.4, rx: 7, ry: 4.4 },
-        closed: `<path class="nose" d="M57.5 51 h5 l-2.5 2.6 Z" />
-          <path class="line" d="M55.8 55 C56.2 57.2 59.1 57.4 60 54 C60.9 57.4 63.8 57.2 64.2 55" />
-          <path class="line" d="M58.8 60.4 h2.4" />`,
-        open: `<path class="nose" d="M57.5 49.4 h5 l-2.5 2.6 Z" />
-          ${tongueMouth(52.4)}`,
+        closed: `<path class="nose" d="M57.5 49.4 h5 l-2.5 2.6 Z" />
+          <path class="line" d="M55.8 53.4 C56.2 55.6 59.1 55.8 60 52.4 C60.9 55.8 63.8 55.6 64.2 53.4" />
+          <path class="line" d="M58.8 58.4 h2.4" />`,
+        open: `<path class="nose" d="M57.5 47.8 h5 l-2.5 2.6 Z" />
+          ${tongueMouth(50.4)}`,
       }) +
       `<path class="white" d="M17 65.5 C36 73.5 84 73.5 103 65.5 L104 74.5 C86 83.5 34 83.5 16 74.5 Z" />
     <path class="line fold" d="M40 76 q8 1.6 16 1.8 M70 77.2 q7 -0.6 13 -2.2" />`,
@@ -235,13 +264,13 @@
       }),
   );
 
-  // act: 평소 상태에서 every 초마다 for 초 동안 하는 짓. name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
-  //   smile: 웃는 얼굴 / crossed: 팔짱
+  // act: every 초마다 for 초 동안 하는 짓(남은 시간과 상관없이 항상). name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
+  //   smile: 웃는 얼굴 / crossed: 팔짱 / kyaa: "캬아" 얼굴
   window.CHARACTERS = {
-    hachi: { name: '하치와레', svg: hachi },
+    hachi: { name: '하치와레', svg: hachi, act: { name: 'smile', every: 6, for: 2 } },
     chii: { name: '치이카와', svg: chii, act: { name: 'smile', every: 6, for: 2 } },
     usagi: { name: '우사기', svg: usagi, act: { name: 'crossed', every: 7, for: 3 } },
-    kuri: { name: '쿠리만쥬', svg: kuri },
+    kuri: { name: '쿠리만쥬', svg: kuri, act: { name: 'kyaa', every: 8, for: 3 } },
     rakko: { name: '랏코', svg: rakko },
     beetle: { name: '풍뎅이', svg: beetle },
   };

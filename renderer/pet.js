@@ -32,9 +32,9 @@ function render() {
   const now = Date.now();
   const { state, text } = status(now);
   stage.dataset.state = state;
-  // 캐릭터마다 정해 둔 짓(웃기·팔짱 등)을 평소 상태에서 정해진 간격으로 잠깐 한다(말풍선·몸 움직임은 그대로)
+  // 캐릭터마다 정해 둔 짓(웃기·팔짱 등)을 정해진 간격으로 잠깐 한다. 남은 시간(상태)과는 상관없고, 말풍선·몸 움직임은 그대로다
   const act = window.CHARACTERS[character]?.act;
-  const acting = state === 'idle' && act && Math.floor(now / 1000) % act.every < act.for;
+  const acting = act && Math.floor(now / 1000) % act.every < act.for;
   if (acting) pet.dataset.act = act.name;
   else delete pet.dataset.act;
   if (cheer && now >= cheer.until) cheer = null;

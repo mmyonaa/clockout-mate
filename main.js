@@ -19,7 +19,15 @@ let win;
 let settingsWin = null;
 let tray;
 // cheers 가 비어 있으면 기본 문구를 쓴다
-let config = { offTime: '18:00', xRatio: null, character: 'hachi', scale: 1, cheers: [] };
+let config = {
+  offTime: '18:00',
+  startTime: '09:00',
+  workHoursOnly: false,
+  xRatio: null,
+  character: 'hachi',
+  scale: 1,
+  cheers: [],
+};
 let dragTimer = null;
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
@@ -29,9 +37,10 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 // 설정 파일과 설정 창에서 들어오는 값을 같은 규칙으로 거른다. 규칙에 맞는 항목만 돌려준다
 function sanitize(raw) {
   const out = {};
-  if (typeof raw?.offTime === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(raw.offTime)) {
-    out.offTime = raw.offTime.padStart(5, '0');
+  for (const key of ['offTime', 'startTime']) {
+    if (typeof raw?.[key] === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(raw[key])) out[key] = raw[key].padStart(5, '0');
   }
+  if (typeof raw?.workHoursOnly === 'boolean') out.workHoursOnly = raw.workHoursOnly;
   if (Number.isFinite(raw?.xRatio)) out.xRatio = clamp(raw.xRatio, 0, 1);
   // 어떤 캐릭터가 있는지는 렌더러(characters.js)가 안다. 여기서는 형식만 보고, 모르는 이름이면 렌더러가 기본 캐릭터를 쓴다
   if (typeof raw?.character === 'string' && /^[a-z]{1,20}$/.test(raw.character)) out.character = raw.character;
@@ -91,6 +100,8 @@ const autoLaunch = () => ({
 
 const settingsState = () => ({
   offTime: config.offTime,
+  startTime: config.startTime,
+  workHoursOnly: config.workHoursOnly,
   character: config.character,
   scale: config.scale,
   cheers: config.cheers,
@@ -99,10 +110,36 @@ const settingsState = () => ({
   autoLaunch: autoLaunch(),
 });
 
+const minutesOf = (time) => {
+  const [hour, minute] = time.split(':').map(Number);
+  return hour * 60 + minute;
+};
+
+// 업무 시간 = 출근 시각부터 퇴근 시각 직전까지. 출근이 퇴근보다 늦거나 같으면 자정을 넘기는 근무로 본다
+function inWorkHours(now = new Date()) {
+  const current = now.getHours() * 60 + now.getMinutes();
+  const [start, off] = [minutesOf(config.startTime), minutesOf(config.offTime)];
+  return start < off ? current >= start && current < off : current >= start || current < off;
+}
+
+// '업무 시간에만 보이기' 를 켰으면 업무 시간 밖에서는 펫 창을 숨긴다(트레이 아이콘은 남는다)
+function applyVisibility() {
+  const show = !config.workHoursOnly || inWorkHours();
+  if (show === win.isVisible()) return;
+  if (show) {
+    win.showInactive();
+    // macOS 는 보이기 전의 창을 작업 영역 안으로 밀어 올리므로, 보인 뒤에 한 번 더 앉힌다
+    place();
+  } else {
+    win.hide();
+  }
+}
+
 function applyChanges(changes) {
   Object.assign(config, changes);
   saveConfig();
   place();
+  applyVisibility();
   win.webContents.send('config', petConfig());
 }
 
@@ -210,11 +247,7 @@ function createWindow() {
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   place();
-  win.once('ready-to-show', () => {
-    win.showInactive();
-    // macOS 는 보이기 전의 창을 작업 영역 안으로 밀어 올리므로, 보인 뒤에 한 번 더 앉힌다
-    place();
-  });
+  win.once('ready-to-show', applyVisibility);
 }
 
 if (!app.requestSingleInstanceLock()) {
@@ -228,6 +261,9 @@ if (!app.requestSingleInstanceLock()) {
     tray = new Tray(trayIcon());
     tray.setToolTip('퇴근 메이트');
     tray.setContextMenu(buildMenu());
+
+    // 출근·퇴근 시각을 지나는 순간을 놓치지 않게 주기적으로 다시 본다
+    setInterval(applyVisibility, 15000);
 
     // 해상도·배율·바 크기(자동 숨김 포함)가 바뀌면 다시 앉힌다
     for (const event of ['display-metrics-changed', 'display-added', 'display-removed']) {

@@ -81,9 +81,15 @@
   stroke-linejoin: round;
 }
 
-.fold,
-.whiskers {
+/* 아래 둘은 뒤에 나오는 기본 선 규칙(.line)에 덮이지 않도록 .line 을 함께 적는다 */
+.line.fold {
   stroke-width: 1.3;
+}
+
+/* 입 주변의 잔털·잔주름은 얼굴 선보다 가늘고 조금 연한 색으로 긋는다 */
+.line.whiskers {
+  stroke: #5a4b46;
+  stroke-width: 1.1;
 }
 
 
@@ -144,6 +150,70 @@
   stroke-width: 1.8;
 }
 
+/* "캬아": 다문 입 대신 크게 벌린 입과 그 주변 잔주름, 그리고 손에 든 캔을 보여 준다 */
+.only-kyaa {
+  display: none;
+}
+
+[data-act='kyaa'] .only-kyaa {
+  display: block;
+}
+
+[data-act='kyaa'] .hide-on-kyaa {
+  display: none;
+}
+
+/* 임박 상태의 벌린 입 규칙보다 우선해야 하므로 선택자에 캐릭터 요소를 끼운다 */
+[data-act='kyaa'] .char .mouth-closed,
+[data-act='kyaa'] .char .mouth-open {
+  display: none;
+}
+
+.mouth-dark {
+  fill: #7a2f3a;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.tongue-flat {
+  fill: #f08ea0;
+}
+
+.teeth {
+  fill: #fff;
+}
+
+.tooth-gap {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.5;
+}
+
+.drop {
+  fill: #f7e36b;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+}
+
+.can {
+  fill: #d3d7dc;
+  stroke: var(--ink);
+  stroke-width: 1.8;
+}
+
+.can-rim {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.7;
+}
+
+.can-text {
+  fill: var(--ink);
+  font: 700 3px system-ui, -apple-system, sans-serif;
+  text-anchor: middle;
+}
+
 /* 팔짱: 팔 없는 몸과 가슴 앞의 팔 선으로 바꿔 끼운다 */
 .pose-crossed {
   display: none;
@@ -183,13 +253,6 @@
   rotate: -5deg;
 }
 
-.tear {
-  fill: #bfe6f7;
-  stroke: var(--ink);
-  stroke-width: 1.3;
-  stroke-linejoin: round;
-}
-
 .tail {
   transform-box: fill-box;
   transform-origin: 0% 100%;
@@ -197,27 +260,22 @@
 }
 
 /* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 조건에 따라 다른 눈·입으로 갈아 끼운다.
-   - data-state: 남은 시간에 따른 상태. 임박이면 입을 벌리고, 야근이면 눈을 감고 눈물을 단다. 퇴근 시각에는 평소 얼굴 그대로다
-   - data-act: 캐릭터가 평소에 잠깐씩 하는 짓. 'smile' 은 웃는 얼굴, 'crossed' 는 팔짱 낀 몸 */
+   - data-state: 남은 시간에 따른 상태. 임박이면 입을 벌린다. 퇴근 시각과 야근 중에는 평소 얼굴 그대로다
+   - data-act: 캐릭터가 잠깐씩 하는 짓. 상태와 겹칠 수 있으므로, 입을 바꾸는 짓은 임박 상태의 벌린 입도 함께 숨긴다. 'smile' 은 웃는 얼굴, 'crossed' 는 팔짱 낀 몸, 'kyaa' 는 "캬아" 얼굴 */
 .eyes-happy,
-.eyes-sad,
-.mouth-open,
-.tear {
+.mouth-open {
   display: none;
 }
 
 [data-state='soon'] .mouth-closed,
 [data-act='smile'] .mouth-closed,
-[data-act='smile'] .eyes-open,
-[data-state='overtime'] .eyes-open {
+[data-act='smile'] .eyes-open {
   display: none;
 }
 
 [data-state='soon'] .mouth-open,
 [data-act='smile'] .mouth-open,
-[data-act='smile'] .eyes-happy,
-[data-state='overtime'] .eyes-sad,
-[data-state='overtime'] .tear {
+[data-act='smile'] .eyes-happy {
   display: block;
 }
 
