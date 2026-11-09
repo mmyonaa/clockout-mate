@@ -289,6 +289,12 @@
   stroke-width: 1;
 }
 
+.king-toe circle {
+  fill: var(--king-skin);
+  stroke: var(--king-ink);
+  stroke-width: 0.9;
+}
+
 .king-eye {
   fill: #fff;
   stroke: var(--king-ink);
