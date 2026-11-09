@@ -301,6 +301,33 @@
   stroke-width: 0.9;
 }
 
+/* 뒷모습: 앞모습을 통째로 감추고 따로 그린 뒷모습을 보여 준다 */
+.only-back {
+  display: none;
+}
+
+[data-act='back'] .only-back {
+  display: block;
+}
+
+[data-act='back'] .hide-on-back {
+  display: none;
+}
+
+/* 뒷모습의 몸 윤곽은 면과 따로 긋는 선이라, 다른 캐릭터의 몸 윤곽과 같은 굵기를 직접 준다. 꼬리의 솜털과 느낌표 같은 덧선은 얼굴 선보다 가늘다
+   (둘 다 뒤에 나오는 기본 선 규칙에 덮이지 않도록 .line 을 함께 적는다) */
+.line.outline {
+  stroke-width: 2.6;
+}
+
+.line.fluff {
+  stroke-width: 1.6;
+}
+
+.fluff-ball {
+  fill: #fff;
+}
+
 /* 팔짱: 팔 없는 몸과 가슴 앞의 팔 선으로 바꿔 끼운다 */
 .pose-crossed {
   display: none;
@@ -348,7 +375,7 @@
 
 /* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 조건에 따라 다른 눈·입으로 갈아 끼운다.
    - data-state: 남은 시간에 따른 상태. 임박이면 입을 벌린다. 퇴근 시각과 야근 중에는 평소 얼굴 그대로다
-   - data-act: 캐릭터가 잠깐씩 하는 짓('king' 은 장수풍뎅이 왕). 상태와 겹칠 수 있으므로, 입을 바꾸는 짓은 임박 상태의 벌린 입도 함께 숨긴다. 'smile' 은 웃는 얼굴, 'crossed' 는 팔짱 낀 몸, 'kyaa' 는 "캬아" 얼굴 */
+   - data-act: 캐릭터가 잠깐씩 하는 짓('king' 은 장수풍뎅이 왕). 상태와 겹칠 수 있으므로, 입을 바꾸는 짓은 임박 상태의 벌린 입도 함께 숨긴다. 'smile' 은 웃는 얼굴, 'crossed' 는 팔짱 낀 몸, 'back' 은 뒷모습, 'kyaa' 는 "캬아" 얼굴 */
 .eyes-happy,
 .mouth-open {
   display: none;

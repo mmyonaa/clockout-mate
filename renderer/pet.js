@@ -28,14 +28,23 @@ function status(now) {
   return { state: 'overtime', text: `야근 ${formatMinutes(over)}째…` };
 }
 
+// 짓들은 각자 every 초짜리 구간을 차례로 차지하며 돌고, 구간의 앞쪽 for 초 동안만 한다. 지금 할 짓의 이름을, 쉬는 중이면 null 을 돌려준다
+function currentAct(acts, seconds) {
+  let t = seconds % acts.reduce((sum, act) => sum + act.every, 0);
+  for (const act of acts) {
+    if (t < act.every) return t < act.for ? act.name : null;
+    t -= act.every;
+  }
+  return null;
+}
+
 function render() {
   const now = Date.now();
   const { state, text } = status(now);
   stage.dataset.state = state;
   // 캐릭터마다 정해 둔 짓(웃기·팔짱 등)을 정해진 간격으로 잠깐 한다. 남은 시간(상태)과는 상관없고, 말풍선·몸 움직임은 그대로다
-  const act = window.CHARACTERS[character]?.act;
-  const acting = act && Math.floor(now / 1000) % act.every < act.for;
-  if (acting) pet.dataset.act = act.name;
+  const act = currentAct(window.CHARACTERS[character]?.acts ?? [], Math.floor(now / 1000));
+  if (act) pet.dataset.act = act;
   else delete pet.dataset.act;
   if (cheer && now >= cheer.until) cheer = null;
   bubble.textContent = cheer ? cheer.text : text;
