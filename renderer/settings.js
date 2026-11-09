@@ -96,6 +96,7 @@ function fill(settings) {
   offTime.value = settings.offTime;
   startTime.value = settings.startTime;
   workHoursOnly.checked = settings.workHoursOnly;
+  showStartTime();
   scale.min = limits.scaleMin;
   scale.max = limits.scaleMax;
   scale.value = settings.scale;
@@ -141,7 +142,15 @@ function bindTime(input, label) {
 bindTime(offTime, '퇴근 시각');
 bindTime(startTime, '출근 시각');
 
-workHoursOnly.addEventListener('change', () => save({ workHoursOnly: workHoursOnly.checked }));
+// 출근 시각은 '업무 시간에만 보이기' 에만 쓰이므로, 그 옵션을 켰을 때만 입력란을 보여 준다
+function showStartTime() {
+  $('startTime-field').hidden = !workHoursOnly.checked;
+}
+
+workHoursOnly.addEventListener('change', () => {
+  showStartTime();
+  save({ workHoursOnly: workHoursOnly.checked });
+});
 
 scale.addEventListener('input', () => {
   showScale();

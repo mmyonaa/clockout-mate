@@ -221,6 +221,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* 바로 위 항목에 딸린 입력란: 위 항목 쪽으로 붙이고 들여쓴다 */
+.field.sub {
+  margin-top: calc(-1 * var(--space-3));
+  padding-left: var(--space-6);
+}
+
 .hint,
 .error,
 .status {

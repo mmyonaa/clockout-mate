@@ -40,10 +40,10 @@
           </p>
         </div>
 
-        <div class="field">
+        <!-- "업무 시간에만 보이기"를 켰을 때만 나타난다 (settings.js 가 hidden 을 풀고 건다) -->
+        <div class="field sub" id="startTime-field" hidden>
           <label for="startTime">출근 시각</label>
-          <input type="time" id="startTime" required aria-describedby="startTime-hint startTime-error" />
-          <p class="hint" id="startTime-hint">"업무 시간에만 보이기"를 켰을 때만 쓰입니다.</p>
+          <input type="time" id="startTime" required aria-describedby="startTime-error" />
           <p class="error" id="startTime-error" role="alert"></p>
         </div>
 

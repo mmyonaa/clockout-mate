@@ -48,7 +48,8 @@ function render() {
 function sayCheer() {
   cheer = { text: cheers[Math.floor(Math.random() * cheers.length)], until: Date.now() + CHEER_MS };
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    pet.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-16px)' }, { transform: 'translateY(0)' }], {
+    // 캐릭터만 뛰면 머리가 말풍선을 파고들므로 말풍선까지 한 덩어리로 뛴다
+    stage.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-16px)' }, { transform: 'translateY(0)' }], {
       duration: 450,
       easing: 'ease-out',
     });

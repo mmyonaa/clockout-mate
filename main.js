@@ -4,7 +4,8 @@ const path = require('node:path');
 
 // 크기 1배일 때의 펫 창 크기. 크기 설정을 바꾸면 창과 내용이 같은 배율로 커진다
 const BASE_W = 190;
-const BASE_H = 150;
+// 귀가 가장 긴 캐릭터와 말풍선(약 140px)에, 클릭했을 때 함께 뛰어오르는 높이(16px)만큼의 여유를 더한 값
+const BASE_H = 166;
 // 발끝이 바에 걸쳐 보이도록 작업 영역 아래로 내리는 픽셀 수 (1배 기준)
 const OVERLAP = 3;
 const SCALE_MIN = 0.6;
