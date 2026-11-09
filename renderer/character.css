@@ -139,6 +139,22 @@
   fill: var(--fur);
 }
 
+/* 혀 가운데의 주름 */
+.tongue-crease {
+  fill: none;
+  stroke: #d9788a;
+  stroke-width: 0.9;
+}
+
+/* 하치와레의 눈웃음은 얼굴 선보다 굵고, 웃을 때 눈썹이 눈 쪽으로 조금 내려온다 */
+.char-hachi .eyes-happy {
+  stroke-width: 2.6;
+}
+
+[data-act='smile'] .char-hachi .brows-plain {
+  transform: translateY(1.5px);
+}
+
 /* 치이카와는 눈썹·눈웃음·입 선·볼터치 빗금이 더 굵다 */
 .char-chii .brows,
 .char-chii .eyes-happy,
@@ -227,7 +243,7 @@
   display: none;
 }
 
-/* 웃을 때 눈썹을 따로 가진 캐릭터는 그 순간 눈썹을 바꿔 끼운다 */
+/* 웃을 때 눈썹을 따로 가진 캐릭터는 그 순간 눈썹을 바꿔 끼운다. 따로 없는 캐릭터는 평소 눈썹이 그대로 남는다 */
 .brows-happy {
   display: none;
 }
@@ -236,7 +252,7 @@
   display: block;
 }
 
-[data-act='smile'] .brows-plain {
+[data-act='smile'] .brows-plain:has(+ .brows-happy) {
   display: none;
 }
 
