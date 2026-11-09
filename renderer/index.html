@@ -10,27 +10,50 @@
     <div class="stage" id="stage" data-state="idle">
       <div class="bubble" id="bubble"></div>
       <div class="pet" id="pet">
-        <svg viewBox="0 0 120 100" aria-hidden="true">
-          <g class="ear">
-            <circle cx="30" cy="24" r="13" class="fur" />
-            <circle cx="30" cy="24" r="6" class="pink" />
-          </g>
-          <g class="ear">
-            <circle cx="90" cy="24" r="13" class="fur" />
-            <circle cx="90" cy="24" r="6" class="pink" />
-          </g>
+        <svg viewBox="0 0 120 110" aria-hidden="true">
+          <path class="blue tail" d="M82 98 C87 92 93 88 99 88.5 C105 89 106.5 95.5 102 99.5 C97.5 103 88 102 82 98 Z" />
+          <!-- 머리·귀·팔·몸을 한 윤곽으로 그리고, 같은 귀 선을 따라 파란 무늬를 덮는다 -->
           <path
             class="fur"
-            d="M60 14 C90 14 106 36 106 62 C106 86 90 94 60 94 C30 94 14 86 14 62 C14 36 30 14 60 14 Z"
+            d="M30 23 Q29.5 13 32 8.5 Q33.8 5.8 36.5 7.6 Q43 12 47 15.6 Q60 17.8 73 15.6 Q77 12 83.5 7.6 Q86.2 5.8 88 8.5 Q90.5 13 90 23 C98 28 104.4 38 104.4 50.8 C104.4 57.8 101.48 64.17 98.23 70.5 C101.5 71.5 104 76 103 79.5 C102 83 96.5 84.8 91.6 84.3 Q90.9 86 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 Q29.1 86 28.4 84.3 C23.5 84.8 18 83 17 79.5 C16 76 18.5 71.5 21.77 70.5 C18.52 64.17 15.6 57.8 15.6 50.8 C15.6 38 22 28 30 23 Z"
           />
-          <ellipse class="pink" cx="33" cy="64" rx="6.5" ry="3.8" />
-          <ellipse class="pink" cx="87" cy="64" rx="6.5" ry="3.8" />
-          <ellipse class="eye" cx="45" cy="54" rx="3.2" ry="4.2" />
-          <ellipse class="eye" cx="75" cy="54" rx="3.2" ry="4.2" />
-          <ellipse class="ink" cx="60" cy="61" rx="3.5" ry="2.5" />
-          <path class="line" d="M54 65 q3 4 6 0 q3 4 6 0" />
-          <ellipse class="fur" cx="44" cy="92" rx="10" ry="6.5" />
-          <ellipse class="fur" cx="76" cy="92" rx="10" ry="6.5" />
+          <path
+            class="blue"
+            d="M23.36 28.79 C25.34 26.45 27.6 24.5 30 23 Q29.5 13 32 8.5 Q33.8 5.8 36.5 7.6 Q43 12 47 15.6 Q60 17.8 73 15.6 Q77 12 83.5 7.6 Q86.2 5.8 88 8.5 Q90.5 13 90 23 C92.4 24.5 94.66 26.45 96.64 28.79 C91 32 84 33 78 31.8 C72 30.5 66 27.5 60 24.9 C54 27.5 48 30.5 42 31.8 C36 33 29 32 23.36 28.79 Z"
+          />
+          <path class="fur" d="M51.6 100.5 V104.4 Q51.6 107.6 55.6 107.6 Q59.6 107.6 59.6 104.4 V100.5" />
+          <path class="fur" d="M60.4 100.5 V104.4 Q60.4 107.6 64.4 107.6 Q68.4 107.6 68.4 104.4 V100.5" />
+          <ellipse class="pink" cx="35.3" cy="52" rx="7.8" ry="5.5" />
+          <ellipse class="pink" cx="84.7" cy="52" rx="7.8" ry="5.5" />
+          <path
+            class="hatch"
+            d="M31.1 50 l-1.2 4 M34.5 49.4 l-1.4 5.2 M37.9 49.4 l-1.4 5.2 M41.1 50 l-1.2 4 M80.5 50 l-1.2 4 M83.9 49.4 l-1.4 5.2 M87.3 49.4 l-1.4 5.2 M90.5 50 l-1.2 4"
+          />
+          <path class="line" d="M48.6 36.4 l0.9 -0.3 M71.4 36.4 l-0.9 -0.3" />
+          <g class="eyes-open">
+            <g class="eye">
+              <circle cx="46.2" cy="44.4" r="5.3" />
+              <ellipse class="shine" cx="45.9" cy="42.7" rx="2.4" ry="1.7" transform="rotate(-10 45.9 42.7)" />
+              <path class="glint" d="M43.9 46.7 q2.3 1.7 4.6 0" />
+            </g>
+            <g class="eye">
+              <circle cx="73.8" cy="44.4" r="5.3" />
+              <ellipse class="shine" cx="73.5" cy="42.7" rx="2.4" ry="1.7" transform="rotate(-10 73.5 42.7)" />
+              <path class="glint" d="M71.5 46.7 q2.3 1.7 4.6 0" />
+            </g>
+          </g>
+          <path class="line eyes-happy" d="M41.2 45.4 Q46.2 39.4 51.2 45.4 M68.8 45.4 Q73.8 39.4 78.8 45.4" />
+          <path class="line eyes-sad" d="M41.2 43.6 Q46.2 48.2 51.2 43.6 M68.8 43.6 Q73.8 48.2 78.8 43.6" />
+          <path class="tear" d="M77.8 47.8 q-3 5 0 6.6 q3 -1.6 0 -6.6 Z" />
+          <g class="mouth-closed">
+            <path class="line" d="M54.8 53.2 C55 56.8 58.4 57.6 59.2 55 L60 52.6 L60.8 55 C61.6 57.6 65 56.8 65.2 53.2" />
+            <path class="line" d="M58.4 60.4 h3.2" />
+          </g>
+          <g class="mouth-open">
+            <path class="tongue" d="M56.6 52.6 C56 58 57.5 61.5 60 61.5 C62.5 61.5 64 58 63.4 52.6 Z" />
+            <path class="line" d="M52.5 49.5 Q54.5 53.5 57 52.5 L60 49 L63 52.5 Q65.5 53.5 67.5 49.5" />
+            <path class="line" d="M57.6 65 q2.4 1.2 4.8 0" />
+          </g>
         </svg>
       </div>
     </div>

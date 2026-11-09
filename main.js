@@ -43,12 +43,22 @@ function place() {
   win.setPosition(clampX(area.x + ratio * (area.width - WIN_W), area), petY(area));
 }
 
-// 이미지 파일 없이 트레이 아이콘(곰 얼굴 실루엣)을 픽셀로 그린다
+// 이미지 파일 없이 트레이 아이콘(고양이 얼굴 실루엣)을 픽셀로 그린다
 function trayIcon() {
   const size = 32;
   const mac = process.platform === 'darwin';
   const [r, g, b] = mac ? [0, 0, 0] : [255, 143, 171];
-  const circles = [[16, 19, 11], [7, 9, 5], [25, 9, 5]];
+  const inHead = (x, y) => (x - 16) ** 2 + (y - 20) ** 2 <= 11 * 11;
+  // 귀: 좌우 대칭인 삼각형. 세 변 모두에 대해 같은 쪽에 있으면 안쪽이다
+  const ear = [[5, 16], [8, 2], [17, 11]];
+  const inEar = (x, y) => {
+    const side = ear.map(([ax, ay], i) => {
+      const [bx, by] = ear[(i + 1) % 3];
+      return (bx - ax) * (y - ay) - (by - ay) * (x - ax) >= 0;
+    });
+    return side.every((s) => s === side[0]);
+  };
+  const inside = (x, y) => inHead(x, y) || inEar(x, y) || inEar(32 - x, y);
   const buf = Buffer.alloc(size * size * 4);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -56,7 +66,7 @@ function trayIcon() {
       for (let s = 0; s < 9; s++) {
         const px = x + ((s % 3) + 0.5) / 3;
         const py = y + (Math.floor(s / 3) + 0.5) / 3;
-        if (circles.some(([cx, cy, rad]) => (px - cx) ** 2 + (py - cy) ** 2 <= rad * rad)) hit++;
+        if (inside(px, py)) hit++;
       }
       const alpha = hit / 9;
       // BGRA, 알파를 미리 곱한 값
