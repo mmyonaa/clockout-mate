@@ -32,11 +32,11 @@ function render() {
   const now = Date.now();
   const { state, text } = status(now);
   stage.dataset.state = state;
-  // 주기적으로 웃는 캐릭터는 평소 상태에서 정해진 간격으로 잠깐 웃는 얼굴이 된다(말풍선·몸 움직임은 그대로)
-  const smile = window.CHARACTERS[character]?.smile;
-  const smiling = state === 'idle' && smile && Math.floor(now / 1000) % smile.every < smile.for;
-  if (smiling) pet.dataset.face = 'smile';
-  else delete pet.dataset.face;
+  // 캐릭터마다 정해 둔 짓(웃기·팔짱 등)을 평소 상태에서 정해진 간격으로 잠깐 한다(말풍선·몸 움직임은 그대로)
+  const act = window.CHARACTERS[character]?.act;
+  const acting = state === 'idle' && act && Math.floor(now / 1000) % act.every < act.for;
+  if (acting) pet.dataset.act = act.name;
+  else delete pet.dataset.act;
   if (cheer && now >= cheer.until) cheer = null;
   bubble.textContent = cheer ? cheer.text : text;
   if (text !== lastStatus) {

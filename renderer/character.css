@@ -10,7 +10,7 @@
 .blue {
   fill: var(--fur);
   stroke: var(--ink);
-  stroke-width: 3.2;
+  stroke-width: 2.6;
   stroke-linejoin: round;
 }
 
@@ -40,7 +40,7 @@
 .white,
 .dark {
   stroke: var(--ink);
-  stroke-width: 3.2;
+  stroke-width: 2.6;
   stroke-linejoin: round;
 }
 
@@ -50,7 +50,7 @@
 
 .white {
   fill: #fff;
-  stroke-width: 2.6;
+  stroke-width: 2.2;
 }
 
 .dark,
@@ -71,7 +71,7 @@
   fill: none;
   stroke: var(--ink);
   stroke-width: 4.6;
-  stroke-dasharray: 1.5 7.4;
+  stroke-dasharray: 1.3 7.6;
 }
 
 .scar {
@@ -83,13 +83,9 @@
 
 .fold,
 .whiskers {
-  stroke-width: 1.5;
+  stroke-width: 1.3;
 }
 
-/* 반쯤 감은 눈꺼풀은 눈을 떴을 때만 */
-[data-state='overtime'] .lids {
-  display: none;
-}
 
 .pink {
   fill: var(--pink);
@@ -100,13 +96,13 @@
 .glint {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 2.3;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .hatch {
-  stroke-width: 1.7;
+  stroke-width: 1.5;
 }
 
 .eye {
@@ -129,7 +125,7 @@
 .mouth-hole {
   fill: #f3a0aa;
   stroke: var(--ink);
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linejoin: round;
 }
 
@@ -141,11 +137,24 @@
 .char-chii .brows,
 .char-chii .eyes-happy,
 .char-chii .mouth-open .line {
-  stroke-width: 2.8;
+  stroke-width: 2.4;
 }
 
 .char-chii .hatch {
-  stroke-width: 2.1;
+  stroke-width: 1.8;
+}
+
+/* 팔짱: 팔 없는 몸과 가슴 앞의 팔 선으로 바꿔 끼운다 */
+.pose-crossed {
+  display: none;
+}
+
+[data-act='crossed'] .pose-crossed {
+  display: block;
+}
+
+[data-act='crossed'] .pose-plain {
+  display: none;
 }
 
 /* 웃을 때 눈썹을 따로 가진 캐릭터는 그 순간 눈썹을 바꿔 끼운다 */
@@ -153,16 +162,16 @@
   display: none;
 }
 
-[data-face='smile'] .brows-happy {
+[data-act='smile'] .brows-happy {
   display: block;
 }
 
-[data-face='smile'] .brows-plain {
+[data-act='smile'] .brows-plain {
   display: none;
 }
 
 /* 치이카와가 웃으면 눈이 내려오는 만큼 볼도 같이 내려오고, 고개를 살짝 기울인다 */
-[data-face='smile'] .char-chii .blush {
+[data-act='smile'] .char-chii .blush {
   transform: translateY(2.6px);
 }
 
@@ -170,7 +179,7 @@
   transition: rotate 200ms ease-out;
 }
 
-[data-face='smile'] .char-chii {
+[data-act='smile'] .char-chii {
   rotate: -5deg;
 }
 
@@ -189,7 +198,7 @@
 
 /* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 조건에 따라 다른 눈·입으로 갈아 끼운다.
    - data-state: 남은 시간에 따른 상태. 임박이면 입을 벌리고, 야근이면 눈을 감고 눈물을 단다. 퇴근 시각에는 평소 얼굴 그대로다
-   - data-face='smile': 웃는 얼굴. 주기적으로 웃는 캐릭터에만 잠깐씩 걸린다 */
+   - data-act: 캐릭터가 평소에 잠깐씩 하는 짓. 'smile' 은 웃는 얼굴, 'crossed' 는 팔짱 낀 몸 */
 .eyes-happy,
 .eyes-sad,
 .mouth-open,
@@ -198,15 +207,15 @@
 }
 
 [data-state='soon'] .mouth-closed,
-[data-face='smile'] .mouth-closed,
-[data-face='smile'] .eyes-open,
+[data-act='smile'] .mouth-closed,
+[data-act='smile'] .eyes-open,
 [data-state='overtime'] .eyes-open {
   display: none;
 }
 
 [data-state='soon'] .mouth-open,
-[data-face='smile'] .mouth-open,
-[data-face='smile'] .eyes-happy,
+[data-act='smile'] .mouth-open,
+[data-act='smile'] .eyes-happy,
 [data-state='overtime'] .eyes-sad,
 [data-state='overtime'] .tear {
   display: block;

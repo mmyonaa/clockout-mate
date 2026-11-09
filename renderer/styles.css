@@ -27,7 +27,7 @@ body {
   position: relative;
   margin-bottom: 8px;
   padding: 5px 11px;
-  border: 2px solid var(--ink);
+  border: 1.5px solid var(--ink);
   border-radius: 13px;
   background: #fff;
   color: var(--ink);
@@ -53,7 +53,7 @@ body {
   width: 8px;
   height: 8px;
   border: solid var(--ink);
-  border-width: 0 2px 2px 0;
+  border-width: 0 1.5px 1.5px 0;
   background: inherit;
   transform: translateX(-50%) rotate(45deg);
 }

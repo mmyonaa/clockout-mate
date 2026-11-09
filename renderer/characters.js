@@ -39,7 +39,7 @@
   //   blush: 볼터치 { dx, y, rx, ry }
   //   eye.style: 눈 모양 (위 eye 함수 참고)
   //   brows: 눈썹 선. 없는 캐릭터는 빈 문자열
-  //   happyEyes / happyBrows: 웃는 얼굴의 눈·눈썹 선. 주기적으로 웃는 캐릭터(smile)만 준다
+  //   happyEyes / happyBrows: 웃는 얼굴의 눈·눈썹 선. 주기적으로 웃는 캐릭터만 준다
   //   closed / open: 다문 입과 벌린 입의 SVG 조각. 입 모양은 캐릭터마다 달라서 각자 넘긴다
   const face = ({ brows, eye: e, blush: b, closed, open, happyEyes, happyBrows }) => {
     const [lx, rx] = [n(60 - e.dx), n(60 + e.dx)];
@@ -65,9 +65,16 @@
 
   // 모든 캐릭터는 몸이 같고 머리 윗선(귀·뿔)만 다르다. 윤곽은 왼쪽 귀 바깥 밑동 (30,23) 에서 시작해 윗선 → BODY 순으로 한 바퀴 돈다.
   // BODY: 오른쪽 귀 바깥 밑동 (90,23) 에서 머리 옆 → 팔 → 몸 아래 → 반대편 팔 → 머리 옆을 거쳐 시작점으로
-  const BODY =
-    'C98 28 104.4 38 104.4 50.8 C104.4 57.8 101.48 64.17 98.23 70.5 C101.5 71.5 104 76 103 79.5 C102 83 96.5 84.8 91.6 84.3 Q90.9 86 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 Q29.1 86 28.4 84.3 C23.5 84.8 18 83 17 79.5 C16 76 18.5 71.5 21.77 70.5 C18.52 64.17 15.6 57.8 15.6 50.8 C15.6 38 22 28 30 23 Z';
+  // BODY_LOWER: 머리가 가장 넓은 오른쪽 점 (104.4,50.8) 에서 팔·몸 아래를 돌아 왼쪽의 같은 높이 (15.6,50.8) 까지.
+  // 머리 윗부분 윤곽을 통째로 따로 그리는 캐릭터는 이것만 가져다 쓴다
+  const BODY_LOWER =
+    'C104.4 57.8 101.48 64.17 98.23 70.5 C101.5 71.5 104 76 103 79.5 C102 83 96.5 84.8 91.6 84.3 Q90.9 86 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 Q29.1 86 28.4 84.3 C23.5 84.8 18 83 17 79.5 C16 76 18.5 71.5 21.77 70.5 C18.52 64.17 15.6 57.8 15.6 50.8';
+  const BODY = `C98 28 104.4 38 104.4 50.8 ${BODY_LOWER} C15.6 38 22 28 30 23 Z`;
   // 발은 몸 위에 그려 몸 아랫선을 덮는다. 그래야 몸에서 그대로 이어져 내려온 것처럼 보인다
+  // 팔이 없는 몸 윤곽. 팔을 몸 앞으로 모은 자세(팔짱)에 쓴다. 시작·끝점은 BODY 와 같다.
+  // 팔이 가려 주지 않으므로 머리와 몸의 경계가 드러난다: 볼이 아래로 둥글게 말려 들어간 뒤 (93.5,71.5) 에서 꺾여 몸이 내려간다
+  const BODY_NO_ARMS =
+    'C98 28 104.4 38 104.4 50.8 C104.4 60 100 67.5 93.5 71.5 C94.5 77 93 83 90.6 87.6 C87 96 75 103 60 103 C45 103 33 96 29.4 87.6 C27 83 25.5 77 26.5 71.5 C20 67.5 15.6 60 15.6 50.8 C15.6 38 22 28 30 23 Z';
   const feet = (cls) => `<path class="${cls}" d="M51.6 100.5 V104.4 Q51.6 107.6 55.6 107.6 Q59.6 107.6 59.6 104.4 V100.5" />
     <path class="${cls}" d="M60.4 100.5 V104.4 Q60.4 107.6 64.4 107.6 Q68.4 107.6 68.4 104.4 V100.5" />`;
   const FEET = feet('fur');
@@ -132,14 +139,19 @@
       }),
   );
 
-  // 우사기: 머리 위 가운데에 길게 선 두 귀(안쪽은 분홍), 눈 위로 크게 휜 눈썹 선
+  // 우사기: 머리 위 가운데에 길게 선 두 귀(안쪽은 분홍), 눈 위로 크게 휜 눈썹 선.
+  // 몸을 두 벌 그려 둔다: 평소 몸과, 팔을 가슴 앞에서 엇갈린 팔짱 낀 몸(character/우사기/우사기_3.jpeg). CSS 가 하나만 보여 준다
   const USAGI_EARS =
     'C36 19 42 17 47 16.2 C45.5 4 44 -10 46 -17 C47.2 -22 52.8 -22 54 -17 C55.5 -9 57 4 58.3 15.4 Q60 16.6 61.7 15.4 C63 4 64.5 -9 66 -17 C67.2 -22 72.8 -22 74 -17 C76 -10 74.5 4 73 16.2 C78 17 84 19 90 23';
 
   const usagi = svg(
     'usagi',
     -25,
-    `<path class="fur" d="M30 23 ${USAGI_EARS} ${BODY}" />
+    `<path class="fur pose-plain" d="M30 23 ${USAGI_EARS} ${BODY}" />
+    <g class="pose-crossed">
+      <path class="fur" d="M30 23 ${USAGI_EARS} ${BODY_NO_ARMS}" />
+      <path class="line" d="M48.5 76 C52 71.5 60 71 64.5 73.5 M69.5 73.6 C65 72.6 60.5 75.5 56.5 82.5 M60.4 77.6 C63 77.4 65.6 78.4 67.4 80.2" />
+    </g>
     <path class="ear-pink" d="M50.3 11 C49.6 2 48.7 -9 49.5 -15 C49.9 -17.8 51.7 -17.8 52.1 -15 C53 -8 53.6 2 54 11 Z" />
     <path class="ear-pink" d="M69.7 11 C70.4 2 71.3 -9 70.5 -15 C70.1 -17.8 68.3 -17.8 67.9 -15 C67 -8 66.4 2 66 11 Z" />
     ${FEET}` +
@@ -152,52 +164,55 @@
       }),
   );
 
-  // 쿠리만쥬: 머리 위의 갈색 밤 무늬, 머리 양옆으로 나온 작은 귀, 점 같은 눈. 입을 벌리면 입 위에 잔털이 선다
+  // 쿠리만쥬: 머리 위로 낮고 넓게 솟은 갈색 밤 무늬, 무늬 아래 모서리에서 양옆으로 나온 작은 귀, 점 같은 눈.
+  // 입을 벌리면 입 위에 잔털이 선다
+  const KURI_TOP = 'C35 15.5 46 11.5 60 11.5 C74 11.5 85 15.5 90 23';
+
   const kuri = svg(
     'kuri',
     0,
-    `<ellipse class="fur" cx="18.5" cy="31" rx="6.6" ry="4.6" transform="rotate(-20 18.5 31)" />
-    <ellipse class="fur" cx="101.5" cy="31" rx="6.6" ry="4.6" transform="rotate(20 101.5 31)" />
-    <path class="fur" d="M30 23 ${PLAIN_TOP} ${BODY}" />
-    <path class="brown" d="${SIDE_UP} ${PLAIN_TOP} ${SIDE_DOWN} Q60 44.5 21.48 31.26 Z" />
+    `<ellipse class="fur" cx="21.5" cy="27.5" rx="6.6" ry="4.6" transform="rotate(-24 21.5 27.5)" />
+    <ellipse class="fur" cx="98.5" cy="27.5" rx="6.6" ry="4.6" transform="rotate(24 98.5 27.5)" />
+    <path class="fur" d="M30 23 ${KURI_TOP} ${BODY}" />
+    <path class="brown" d="M30 23 ${KURI_TOP} Q60 37.5 30 23 Z" />
     ${FEET}` +
       face({
         brows: '',
-        eye: { dx: 14.6, y: 48, r: 3.7, style: 'dot' },
-        blush: { dx: 26, y: 55.6, rx: 7.6, ry: 4.8 },
-        closed: omega(55.4),
-        open: `<path class="line whiskers" d="M54.6 50.8 l-1.4 -2.6 M58.2 50.2 l-0.5 -2.8 M61.8 50.2 l0.5 -2.8 M65.4 50.8 l1.4 -2.6" />
-          ${tongueMouth(52.8)}`,
+        eye: { dx: 14.4, y: 45.4, r: 4, style: 'dot' },
+        blush: { dx: 25.6, y: 53.2, rx: 7.6, ry: 4.8 },
+        closed: omega(52.8),
+        open: `<path class="line whiskers" d="M54.6 48.6 l-1.4 -2.6 M58.2 48 l-0.5 -2.8 M61.8 48 l0.5 -2.8 M65.4 48.6 l1.4 -2.6" />
+          ${tongueMouth(50.6)}`,
       }),
   );
 
-  // 랏코(해달): 윤곽선 대신 짧은 털이 둘러 있고, 귀·발이 짙다. 이마의 흉터, 반쯤 감은 눈, 코, 흰 목도리와 망토
-  const RAKKO_OUTLINE = `M30 23 ${PLAIN_TOP} ${BODY}`;
+  // 랏코(해달): 윤곽선 대신 짧은 털이 둘러 있고, 귀·발이 짙다. 머리는 다른 캐릭터보다 조금 높고 어깨가 넓게 벌어진 둥근 돔이다
+  // (character/랏코/랏코_2.png 의 머리 윤곽을 잰 값: 꼭대기에서 폭의 10% 내려간 곳의 폭이 0.67 로, 원의 0.60 보다 넓다).
+  // 이마의 흉터, 안쪽이 내려간 짧은 눈썹과 그 사이의 세로 선 둘, 동그란 눈, 코와 그 아래 입. 목에는 흰 목도리와 망토
+  const RAKKO_OUTLINE = `M15.6 50.8 C16.5 40 19.5 31.5 23 25.5 C29 18 42 10 60 10 C78 10 91 18 97 25.5 C100.5 31.5 103.5 40 104.4 50.8 ${BODY_LOWER} Z`;
   const rakko = svg(
     'rakko',
     0,
-    `<path class="white" d="M25 74 L9 101 L31 97 Z" />
-    <path class="white" d="M95 74 L111 101 L89 97 Z" />
-    <ellipse class="dark" cx="17.6" cy="33" rx="5" ry="6" />
-    <ellipse class="dark" cx="102.4" cy="33" rx="5" ry="6" />
+    `<path class="white" d="M24 77 L9 101 L31 97 Z" />
+    <path class="white" d="M96 77 L111 101 L89 97 Z" />
+    <ellipse class="dark" cx="17.4" cy="37" rx="5" ry="6" />
+    <ellipse class="dark" cx="102.6" cy="37" rx="5" ry="6" />
     <path class="plain" d="${RAKKO_OUTLINE}" />
     <path class="ticks" d="${RAKKO_OUTLINE}" />
     ${feet('dark')}
-    <path class="scar" d="M36.5 36.5 L42 29.6 L40.4 27.4 L44 28.6 L50 24.4 L45.2 31.2 L46.4 33.8 L43 32.2 Z" />` +
+    <path class="scar" d="M33.5 39.8 L39 32.9 L37.4 30.7 L41 31.9 L47 27.7 L42.2 34.5 L43.4 37.1 L40 35.5 Z" />` +
       face({
-        brows: 'M40.6 37 l6.4 2 M79.4 37 l-6.4 2 M58 34.6 v2.2 M62 34.6 v2.2',
-        eye: { dx: 13, y: 45, r: 4.8, style: 'double' },
-        blush: { dx: 24.6, y: 53.4, rx: 7.2, ry: 4.6 },
-        closed: `<path class="line lids" d="M41.6 42.2 h10.8 M67.6 42.2 h10.8" />
-          <path class="nose" d="M57.4 49.2 h5.2 l-2.6 2.8 Z" />
-          <path class="line" d="M55.4 53.6 C55.9 56 59 56.2 60 52.4 C61 56.2 64.1 56 64.6 53.6" />
-          <path class="line" d="M58.6 59.4 h2.8" />`,
-        open: `<path class="line lids" d="M41.6 42.2 h10.8 M67.6 42.2 h10.8" />
-          <path class="nose" d="M57.4 48 h5.2 l-2.6 2.8 Z" />
-          ${tongueMouth(51.4)}`,
+        brows: 'M43.6 39.1 l3.4 1.1 M76.4 39.1 l-3.4 1.1 M58.2 37.4 v2 M61.8 37.4 v2',
+        eye: { dx: 12.8, y: 48, r: 5, style: 'double' },
+        blush: { dx: 23.4, y: 55.4, rx: 7, ry: 4.4 },
+        closed: `<path class="nose" d="M57.5 51 h5 l-2.5 2.6 Z" />
+          <path class="line" d="M55.8 55 C56.2 57.2 59.1 57.4 60 54 C60.9 57.4 63.8 57.2 64.2 55" />
+          <path class="line" d="M58.8 60.4 h2.4" />`,
+        open: `<path class="nose" d="M57.5 49.4 h5 l-2.5 2.6 Z" />
+          ${tongueMouth(52.4)}`,
       }) +
-      `<path class="white" d="M18.6 61.5 C36 69.5 84 69.5 101.4 61.5 L103.4 70.5 C86 79.5 34 79.5 16.6 70.5 Z" />
-    <path class="line fold" d="M40 72 q8 1.6 16 1.8 M70 73.2 q7 -0.6 13 -2.2" />`,
+      `<path class="white" d="M17 65.5 C36 73.5 84 73.5 103 65.5 L104 74.5 C86 83.5 34 83.5 16 74.5 Z" />
+    <path class="line fold" d="M40 76 q8 1.6 16 1.8 M70 77.2 q7 -0.6 13 -2.2" />`,
   );
 
   // 풍뎅이: 갈색 몸에 흰 얼굴과 배, 머리 위에 끝이 양쪽으로 말려 올라간 뿔
@@ -220,11 +235,12 @@
       }),
   );
 
-  // smile: 평소 상태에서 every 초마다 for 초 동안 웃는 얼굴이 된다 (없으면 웃지 않음). 웃는 얼굴은 이때만 나온다
+  // act: 평소 상태에서 every 초마다 for 초 동안 하는 짓. name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
+  //   smile: 웃는 얼굴 / crossed: 팔짱
   window.CHARACTERS = {
     hachi: { name: '하치와레', svg: hachi },
-    chii: { name: '치이카와', svg: chii, smile: { every: 6, for: 2 } },
-    usagi: { name: '우사기', svg: usagi },
+    chii: { name: '치이카와', svg: chii, act: { name: 'smile', every: 6, for: 2 } },
+    usagi: { name: '우사기', svg: usagi, act: { name: 'crossed', every: 7, for: 3 } },
     kuri: { name: '쿠리만쥬', svg: kuri },
     rakko: { name: '랏코', svg: rakko },
     beetle: { name: '풍뎅이', svg: beetle },
