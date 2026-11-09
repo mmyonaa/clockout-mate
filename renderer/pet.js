@@ -2,12 +2,13 @@ const stage = document.getElementById('stage');
 const bubble = document.getElementById('bubble');
 const pet = document.getElementById('pet');
 
-const CHEERS = ['조금만 더 힘내요!', '물 한 잔 어때요?', '스트레칭 타임!', '오늘도 잘하고 있어요', '어깨 펴고, 숨 한 번!'];
 const CHEER_MS = 3000;
 // 이 거리(px)보다 덜 움직인 누름은 드래그가 아니라 클릭으로 본다
 const DRAG_THRESHOLD = 4;
 
 let offTime = '18:00';
+let cheers = [];
+let character = null;
 let cheer = null;
 let lastStatus = '';
 let drag = null;
@@ -40,7 +41,7 @@ function render() {
 }
 
 function sayCheer() {
-  cheer = { text: CHEERS[Math.floor(Math.random() * CHEERS.length)], until: Date.now() + CHEER_MS };
+  cheer = { text: cheers[Math.floor(Math.random() * cheers.length)], until: Date.now() + CHEER_MS };
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
     pet.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-16px)' }, { transform: 'translateY(0)' }], {
       duration: 450,
@@ -84,13 +85,22 @@ window.addEventListener('pointerup', endDrag);
 window.addEventListener('pointercancel', endDrag);
 pet.addEventListener('contextmenu', () => window.mate.showMenu());
 
-window.mate.onConfig((config) => {
+// 설정이 바뀔 때마다 통째로 다시 받는다. 그림은 캐릭터가 바뀐 경우에만 갈아 끼운다
+function applyConfig(config) {
   offTime = config.offTime;
+  cheers = config.cheers;
+  stage.style.zoom = config.scale;
+  const id = Object.hasOwn(window.CHARACTERS, config.character) ? config.character : window.DEFAULT_CHARACTER;
+  if (id !== character) {
+    character = id;
+    pet.innerHTML = window.CHARACTERS[id].svg;
+  }
   render();
-});
+}
+
+window.mate.onConfig(applyConfig);
 
 window.mate.getConfig().then((config) => {
-  offTime = config.offTime;
-  render();
+  applyConfig(config);
   setInterval(render, 1000);
 });

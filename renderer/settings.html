@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <title>퇴근 메이트 설정</title>
+    <link rel="stylesheet" href="character.css" />
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <main>
+      <h1>퇴근 메이트 설정</h1>
+
+      <p id="loading">설정을 불러오는 중…</p>
+      <div id="load-error" role="alert" hidden>
+        <p>설정을 불러오지 못했습니다.</p>
+        <button type="button" id="retry">다시 불러오기</button>
+      </div>
+
+      <form id="form" novalidate hidden>
+        <fieldset>
+          <legend>캐릭터</legend>
+          <div class="characters" id="characters"></div>
+        </fieldset>
+
+        <div class="field">
+          <label for="offTime">퇴근 시각</label>
+          <input type="time" id="offTime" required aria-describedby="offTime-error" />
+          <p class="error" id="offTime-error" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label for="scale">크기 <output id="scale-value" for="scale"></output></label>
+          <input type="range" id="scale" step="0.1" />
+        </div>
+
+        <div class="field">
+          <label for="cheers">응원 문구</label>
+          <p class="hint" id="cheers-hint"></p>
+          <textarea id="cheers" rows="5" spellcheck="false" aria-describedby="cheers-hint cheers-error"></textarea>
+          <p class="error" id="cheers-error" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label class="check" for="autoLaunch">
+            <input type="checkbox" id="autoLaunch" aria-describedby="autoLaunch-hint" />
+            로그인할 때 자동으로 실행
+          </label>
+          <p class="hint" id="autoLaunch-hint"></p>
+        </div>
+
+        <div class="field">
+          <button type="button" id="resetPosition" aria-describedby="resetPosition-hint">위치 초기화</button>
+          <p class="hint" id="resetPosition-hint">
+            캐릭터를 기본 자리로 되돌립니다. 자리는 캐릭터를 좌우로 끌어서 다시 옮길 수 있습니다.
+          </p>
+        </div>
+      </form>
+
+      <p class="status" id="status" role="status"></p>
+      <p class="error" id="save-error" role="alert"></p>
+    </main>
+    <script src="characters.js"></script>
+    <script src="settings.js"></script>
+  </body>
+</html>

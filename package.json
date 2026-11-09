@@ -1,13 +1,38 @@
 {
   "name": "clockout-mate",
+  "productName": "ClockoutMate",
   "version": "0.1.0",
   "private": true,
   "description": "퇴근 메이트 — 작업 표시줄/Dock 위에 앉아 퇴근까지 남은 시간을 알려주는 데스크톱 펫",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "icon": "electron scripts/make-icon.js",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "local.clockout-mate",
+    "artifactName": "clockout-mate-${version}-${arch}.${ext}",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "devDependencies": {
-    "electron": "^45.2.3"
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
   }
 }

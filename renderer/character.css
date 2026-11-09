@@ -1,0 +1,144 @@
+/* 캐릭터 그림의 색·선·표정. 펫 창과 설정 창의 미리보기가 함께 쓴다 */
+:root {
+  --ink: #2a2220;
+  --fur: #fff;
+  --pink: #f9c2ca;
+  --blue: #76a3c6;
+}
+
+.fur,
+.blue {
+  fill: var(--fur);
+  stroke: var(--ink);
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+}
+
+.blue {
+  fill: var(--blue);
+}
+
+.pink {
+  fill: var(--pink);
+}
+
+.hatch,
+.line,
+.glint {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hatch {
+  stroke-width: 1.7;
+}
+
+.eye {
+  fill: var(--ink);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.4s infinite;
+}
+
+.shine {
+  fill: #fff;
+}
+
+.glint {
+  stroke: #fff;
+  stroke-width: 1.1;
+}
+
+.tongue,
+.mouth-hole {
+  fill: #f3a0aa;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.mouth-hole {
+  fill: var(--fur);
+}
+
+/* 치이카와는 눈썹·눈웃음·볼터치 빗금이 더 굵고, 웃을 때 눈썹이 올라간다 */
+.char-chii .brows,
+.char-chii .eyes-happy {
+  stroke-width: 2.8;
+}
+
+.char-chii .hatch {
+  stroke-width: 2.1;
+}
+
+[data-state='done'] .char-chii .brows {
+  transform: translateY(-3px);
+}
+
+.tear {
+  fill: #bfe6f7;
+  stroke: var(--ink);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.tail {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: wag 2.4s ease-in-out infinite;
+}
+
+/* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 상태에 따라 다른 눈·입으로 갈아 끼운다 */
+.eyes-happy,
+.eyes-sad,
+.mouth-open,
+.tear {
+  display: none;
+}
+
+[data-state='soon'] .mouth-closed,
+[data-state='done'] .mouth-closed,
+[data-state='done'] .eyes-open,
+[data-state='overtime'] .eyes-open {
+  display: none;
+}
+
+[data-state='soon'] .mouth-open,
+[data-state='done'] .mouth-open,
+[data-state='done'] .eyes-happy,
+[data-state='overtime'] .eyes-sad,
+[data-state='overtime'] .tear {
+  display: block;
+}
+
+[data-state='soon'] .tail,
+[data-state='done'] .tail {
+  animation-duration: 0.5s;
+}
+
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes wag {
+  50% {
+    transform: rotate(-10deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eye,
+  .tail {
+    animation: none !important;
+  }
+}

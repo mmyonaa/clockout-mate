@@ -1,10 +1,4 @@
-:root {
-  --ink: #2a2220;
-  --fur: #fff;
-  --pink: #f9c2ca;
-  --blue: #76a3c6;
-}
-
+/* 펫 창의 배치·말풍선·몸 움직임. 캐릭터 그림 자체는 character.css */
 html,
 body {
   height: 100%;
@@ -19,7 +13,7 @@ body {
   font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
 
-/* 창 전체는 클릭을 통과시키고 캐릭터만 받는다 */
+/* 창 전체는 클릭을 통과시키고 캐릭터만 받는다. 크기 설정은 pet.js 가 이 요소의 zoom 으로 건다 */
 .stage {
   position: fixed;
   inset: auto 0 0;
@@ -40,6 +34,15 @@ body {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* 문구가 창보다 길면 말줄임표로 자른다. 말풍선 꼬리가 잘리지 않게 안쪽 글자에만 건다 */
+.bubble-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bubble::after {
@@ -83,106 +86,12 @@ body {
   animation: breathe 3.2s ease-in-out infinite;
 }
 
-.fur,
-.blue {
-  fill: var(--fur);
-  stroke: var(--ink);
-  stroke-width: 3.2;
-  stroke-linejoin: round;
-}
-
-.blue {
-  fill: var(--blue);
-}
-
-.tail {
-  transform-box: fill-box;
-  transform-origin: 0% 100%;
-  animation: wag 2.4s ease-in-out infinite;
-}
-
-.pink {
-  fill: var(--pink);
-}
-
-.hatch,
-.line,
-.glint {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2.3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.hatch {
-  stroke-width: 1.7;
-}
-
-.eye {
-  fill: var(--ink);
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: blink 4.4s infinite;
-}
-
-.shine {
-  fill: #fff;
-}
-
-.glint {
-  stroke: #fff;
-  stroke-width: 1.1;
-}
-
-.tongue {
-  fill: #f3a0aa;
-  stroke: var(--ink);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-.tear {
-  fill: #bfe6f7;
-  stroke: var(--ink);
-  stroke-width: 1.3;
-  stroke-linejoin: round;
-}
-
-/* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 상태에 따라 다른 눈·입으로 갈아 끼운다 */
-.eyes-happy,
-.eyes-sad,
-.mouth-open,
-.tear {
-  display: none;
-}
-
-[data-state='soon'] .mouth-closed,
-[data-state='done'] .mouth-closed,
-[data-state='done'] .eyes-open,
-[data-state='overtime'] .eyes-open {
-  display: none;
-}
-
-[data-state='soon'] .mouth-open,
-[data-state='done'] .mouth-open,
-[data-state='done'] .eyes-happy,
-[data-state='overtime'] .eyes-sad,
-[data-state='overtime'] .tear {
-  display: block;
-}
-
 [data-state='soon'] .pet svg {
   animation: bounce 0.7s ease-in-out infinite;
 }
 
 [data-state='done'] .pet svg {
   animation: bounce 0.45s ease-in-out infinite;
-}
-
-[data-state='soon'] .tail,
-[data-state='done'] .tail {
-  animation-duration: 0.5s;
 }
 
 /* 야근 중에는 천천히 숨만 쉰다 */
@@ -202,27 +111,8 @@ body {
   }
 }
 
-@keyframes blink {
-  0%,
-  94%,
-  100% {
-    transform: scaleY(1);
-  }
-  97% {
-    transform: scaleY(0.1);
-  }
-}
-
-@keyframes wag {
-  50% {
-    transform: rotate(-10deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .pet svg,
-  .eye,
-  .tail {
+  .pet svg {
     animation: none !important;
   }
 }

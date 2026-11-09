@@ -2,26 +2,53 @@ const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require
 const fs = require('node:fs');
 const path = require('node:path');
 
-const WIN_W = 180;
-const WIN_H = 150;
-// 발끝이 바에 걸쳐 보이도록 작업 영역 아래로 내리는 픽셀 수
+// 크기 1배일 때의 펫 창 크기. 크기 설정을 바꾸면 창과 내용이 같은 배율로 커진다
+const BASE_W = 190;
+const BASE_H = 150;
+// 발끝이 바에 걸쳐 보이도록 작업 영역 아래로 내리는 픽셀 수 (1배 기준)
 const OVERLAP = 3;
-const OFF_TIMES = ['16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
+const SCALE_MIN = 0.6;
+const SCALE_MAX = 2;
+const MAX_CHEERS = 20;
+const MAX_CHEER_LENGTH = 14;
+const DEFAULT_CHEERS = ['조금만 더 힘내요!', '물 한 잔 어때요?', '스트레칭 타임!', '오늘도 잘하고 있어요', '어깨 펴고, 숨 한 번!'];
 // Windows 는 시계 근처(오른쪽), macOS 는 Dock 이 가운데라 가운데에서 살짝 오른쪽
 const DEFAULT_X_RATIO = process.platform === 'darwin' ? 0.62 : 0.93;
 
 let win;
+let settingsWin = null;
 let tray;
-let config = { offTime: '18:00', xRatio: null };
+// cheers 가 비어 있으면 기본 문구를 쓴다
+let config = { offTime: '18:00', xRatio: null, character: 'hachi', scale: 1, cheers: [] };
 let dragTimer = null;
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+// 설정 파일과 설정 창에서 들어오는 값을 같은 규칙으로 거른다. 규칙에 맞는 항목만 돌려준다
+function sanitize(raw) {
+  const out = {};
+  if (typeof raw?.offTime === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(raw.offTime)) {
+    out.offTime = raw.offTime.padStart(5, '0');
+  }
+  if (Number.isFinite(raw?.xRatio)) out.xRatio = clamp(raw.xRatio, 0, 1);
+  // 어떤 캐릭터가 있는지는 렌더러(characters.js)가 안다. 여기서는 형식만 보고, 모르는 이름이면 렌더러가 기본 캐릭터를 쓴다
+  if (typeof raw?.character === 'string' && /^[a-z]{1,20}$/.test(raw.character)) out.character = raw.character;
+  if (Number.isFinite(raw?.scale)) out.scale = Math.round(clamp(raw.scale, SCALE_MIN, SCALE_MAX) * 10) / 10;
+  if (Array.isArray(raw?.cheers)) {
+    out.cheers = raw.cheers
+      .filter((line) => typeof line === 'string')
+      .map((line) => line.trim().slice(0, MAX_CHEER_LENGTH))
+      .filter(Boolean)
+      .slice(0, MAX_CHEERS);
+  }
+  return out;
+}
+
 function loadConfig() {
   try {
-    const saved = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
-    if (/^([01]?\d|2[0-3]):[0-5]\d$/.test(saved.offTime)) config.offTime = saved.offTime;
-    if (Number.isFinite(saved.xRatio)) config.xRatio = Math.min(Math.max(saved.xRatio, 0), 1);
+    Object.assign(config, sanitize(JSON.parse(fs.readFileSync(configPath(), 'utf8'))));
   } catch {
     // 첫 실행이거나 파일이 깨졌으면 기본값으로 시작한다
   }
@@ -34,13 +61,86 @@ function saveConfig() {
 
 // 작업 영역 = 화면에서 작업 표시줄/Dock 을 뺀 영역. 그 바닥에 창 바닥을 맞추면 바 위에 앉은 것처럼 보인다
 const workArea = () => screen.getPrimaryDisplay().workArea;
-const petY = (area) => area.y + area.height - WIN_H + OVERLAP;
-const clampX = (x, area) => Math.round(Math.min(Math.max(x, area.x), area.x + area.width - WIN_W));
+const winSize = () => ({ width: Math.round(BASE_W * config.scale), height: Math.round(BASE_H * config.scale) });
+const petY = (area) => area.y + area.height - winSize().height + Math.round(OVERLAP * config.scale);
+const clampX = (x, area) => Math.round(clamp(x, area.x, area.x + area.width - winSize().width));
 
 function place() {
   const area = workArea();
+  const { width, height } = winSize();
   const ratio = config.xRatio ?? DEFAULT_X_RATIO;
-  win.setPosition(clampX(area.x + ratio * (area.width - WIN_W), area), petY(area));
+  // 크기 조절을 막아 둔 창은 플랫폼에 따라 코드로도 크기가 안 바뀌므로 잠깐 풀었다가 다시 막는다
+  win.setResizable(true);
+  win.setBounds({ x: clampX(area.x + ratio * (area.width - width), area), y: petY(area), width, height });
+  win.setResizable(false);
+}
+
+// 펫 창에 보내는 설정. 응원 문구를 비워 두었으면 기본 문구를 채워서 보낸다
+const petConfig = () => ({
+  offTime: config.offTime,
+  character: config.character,
+  scale: config.scale,
+  cheers: config.cheers.length ? config.cheers : DEFAULT_CHEERS,
+});
+
+const autoLaunch = () => ({
+  // 개발 실행에서는 등록 대상이 Electron 실행 파일 자체가 되므로 설치본에서만 켤 수 있게 한다
+  available: app.isPackaged,
+  enabled: app.isPackaged && app.getLoginItemSettings().openAtLogin,
+});
+
+const settingsState = () => ({
+  offTime: config.offTime,
+  character: config.character,
+  scale: config.scale,
+  cheers: config.cheers,
+  defaultCheers: DEFAULT_CHEERS,
+  limits: { scaleMin: SCALE_MIN, scaleMax: SCALE_MAX, maxCheers: MAX_CHEERS, maxCheerLength: MAX_CHEER_LENGTH },
+  autoLaunch: autoLaunch(),
+});
+
+function applyChanges(changes) {
+  Object.assign(config, changes);
+  saveConfig();
+  place();
+  win.webContents.send('config', petConfig());
+}
+
+function resetPosition() {
+  config.xRatio = null;
+  saveConfig();
+  place();
+}
+
+function openSettings() {
+  if (settingsWin) {
+    settingsWin.show();
+    settingsWin.focus();
+    return;
+  }
+  settingsWin = new BrowserWindow({
+    width: 460,
+    height: 760,
+    useContentSize: true,
+    title: '퇴근 메이트 설정',
+    show: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.js') },
+  });
+  settingsWin.removeMenu();
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.once('ready-to-show', () => {
+    settingsWin.show();
+    // Dock 아이콘을 숨긴 앱은 창을 띄워도 앞으로 나오지 않으므로 직접 끌어온다
+    app.focus({ steal: true });
+  });
+  settingsWin.on('closed', () => {
+    settingsWin = null;
+  });
 }
 
 // 이미지 파일 없이 트레이 아이콘(고양이 얼굴 실루엣)을 픽셀로 그린다
@@ -79,42 +179,17 @@ function trayIcon() {
 }
 
 function buildMenu() {
-  // 설정 파일에 목록 밖의 시각을 직접 적었어도 메뉴에 나타나게 한다
-  const times = [...new Set([config.offTime.padStart(5, '0'), ...OFF_TIMES])].sort();
   return Menu.buildFromTemplate([
-    {
-      label: '퇴근 시각',
-      submenu: times.map((time) => ({
-        label: time,
-        type: 'radio',
-        checked: time === config.offTime.padStart(5, '0'),
-        click: () => setOffTime(time),
-      })),
-    },
-    {
-      label: '위치 초기화',
-      click: () => {
-        config.xRatio = null;
-        saveConfig();
-        place();
-      },
-    },
+    { label: '설정…', click: openSettings },
+    { label: '위치 초기화', click: resetPosition },
     { type: 'separator' },
     { label: '종료', role: 'quit' },
   ]);
 }
 
-function setOffTime(time) {
-  config.offTime = time;
-  saveConfig();
-  tray.setContextMenu(buildMenu());
-  win.webContents.send('config', { offTime: time });
-}
-
 function createWindow() {
   win = new BrowserWindow({
-    width: WIN_W,
-    height: WIN_H,
+    ...winSize(),
     show: false,
     transparent: true,
     frame: false,
@@ -159,7 +234,19 @@ if (!app.requestSingleInstanceLock()) {
       screen.on(event, place);
     }
 
-    ipcMain.handle('config', () => ({ offTime: config.offTime }));
+    ipcMain.handle('config', petConfig);
+    ipcMain.handle('settings:get', settingsState);
+    ipcMain.handle('settings:set', (_event, raw) => {
+      // 위치는 드래그와 '위치 초기화' 로만 바뀐다
+      const { xRatio, ...changes } = sanitize(raw);
+      applyChanges(changes);
+      return settingsState();
+    });
+    ipcMain.handle('settings:auto-launch', (_event, on) => {
+      if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: Boolean(on) });
+      return autoLaunch();
+    });
+    ipcMain.on('settings:reset-position', resetPosition);
     ipcMain.on('interactive', (_event, on) => win.setIgnoreMouseEvents(!on, { forward: true }));
     ipcMain.on('status', (_event, text) => tray.setToolTip(String(text)));
     ipcMain.on('menu', () => buildMenu().popup({ window: win }));
@@ -176,7 +263,7 @@ if (!app.requestSingleInstanceLock()) {
       clearInterval(dragTimer);
       dragTimer = null;
       const area = workArea();
-      config.xRatio = (win.getPosition()[0] - area.x) / Math.max(area.width - WIN_W, 1);
+      config.xRatio = (win.getPosition()[0] - area.x) / Math.max(area.width - winSize().width, 1);
       saveConfig();
     });
   });
