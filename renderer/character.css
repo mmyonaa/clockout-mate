@@ -18,6 +18,79 @@
   fill: var(--blue);
 }
 
+/* 캐릭터별 몸 색 */
+.char-usagi {
+  --fur: #fcf0c6;
+}
+
+.char-kuri {
+  --fur: #fbe9c3;
+}
+
+.char-rakko {
+  --fur: #fbf1d8;
+}
+
+.char-beetle {
+  --fur: #94766a;
+}
+
+/* 몸 위에 얹는 부분들: 쿠리만쥬의 밤 무늬, 흰 얼굴·목도리, 랏코의 짙은 귀·발 */
+.brown,
+.white,
+.dark {
+  stroke: var(--ink);
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+}
+
+.brown {
+  fill: #a5694f;
+}
+
+.white {
+  fill: #fff;
+  stroke-width: 2.6;
+}
+
+.dark,
+.nose {
+  fill: var(--ink);
+}
+
+.ear-pink {
+  fill: #f5b3c2;
+}
+
+/* 랏코는 윤곽선이 없다. 굵은 선을 아주 짧게 끊어 윤곽에 수직인 털처럼 보이게 한다 */
+.plain {
+  fill: var(--fur);
+}
+
+.ticks {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 4.6;
+  stroke-dasharray: 1.5 7.4;
+}
+
+.scar {
+  fill: #cbb089;
+  stroke: var(--ink);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.fold,
+.whiskers {
+  stroke-width: 1.5;
+}
+
+/* 반쯤 감은 눈꺼풀은 눈을 떴을 때만 */
+[data-state='overtime'] .lids {
+  display: none;
+}
+
 .pink {
   fill: var(--pink);
 }
@@ -64,9 +137,10 @@
   fill: var(--fur);
 }
 
-/* 치이카와는 눈썹·눈웃음·볼터치 빗금이 더 굵고, 웃을 때 눈썹이 올라간다 */
+/* 치이카와는 눈썹·눈웃음·입 선·볼터치 빗금이 더 굵다 */
 .char-chii .brows,
-.char-chii .eyes-happy {
+.char-chii .eyes-happy,
+.char-chii .mouth-open .line {
   stroke-width: 2.8;
 }
 
@@ -74,8 +148,30 @@
   stroke-width: 2.1;
 }
 
-[data-state='done'] .char-chii .brows {
-  transform: translateY(-3px);
+/* 웃을 때 눈썹을 따로 가진 캐릭터는 그 순간 눈썹을 바꿔 끼운다 */
+.brows-happy {
+  display: none;
+}
+
+[data-face='smile'] .brows-happy {
+  display: block;
+}
+
+[data-face='smile'] .brows-plain {
+  display: none;
+}
+
+/* 치이카와가 웃으면 눈이 내려오는 만큼 볼도 같이 내려오고, 고개를 살짝 기울인다 */
+[data-face='smile'] .char-chii .blush {
+  transform: translateY(2.6px);
+}
+
+.char-chii {
+  transition: rotate 200ms ease-out;
+}
+
+[data-face='smile'] .char-chii {
+  rotate: -5deg;
 }
 
 .tear {
@@ -91,7 +187,9 @@
   animation: wag 2.4s ease-in-out infinite;
 }
 
-/* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 상태에 따라 다른 눈·입으로 갈아 끼운다 */
+/* 표정: 평소에는 뜬 눈과 다문 입만 보이고, 조건에 따라 다른 눈·입으로 갈아 끼운다.
+   - data-state: 남은 시간에 따른 상태. 임박이면 입을 벌리고, 야근이면 눈을 감고 눈물을 단다. 퇴근 시각에는 평소 얼굴 그대로다
+   - data-face='smile': 웃는 얼굴. 주기적으로 웃는 캐릭터에만 잠깐씩 걸린다 */
 .eyes-happy,
 .eyes-sad,
 .mouth-open,
@@ -100,15 +198,15 @@
 }
 
 [data-state='soon'] .mouth-closed,
-[data-state='done'] .mouth-closed,
-[data-state='done'] .eyes-open,
+[data-face='smile'] .mouth-closed,
+[data-face='smile'] .eyes-open,
 [data-state='overtime'] .eyes-open {
   display: none;
 }
 
 [data-state='soon'] .mouth-open,
-[data-state='done'] .mouth-open,
-[data-state='done'] .eyes-happy,
+[data-face='smile'] .mouth-open,
+[data-face='smile'] .eyes-happy,
 [data-state='overtime'] .eyes-sad,
 [data-state='overtime'] .tear {
   display: block;
@@ -140,5 +238,9 @@
   .eye,
   .tail {
     animation: none !important;
+  }
+
+  .char-chii {
+    transition: none;
   }
 }

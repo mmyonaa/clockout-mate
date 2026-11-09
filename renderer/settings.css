@@ -111,9 +111,11 @@ output {
   outline: none;
 }
 
+/* 귀가 긴 캐릭터도 있어서 높이를 고정하고 발을 같은 줄에 맞춘다 */
 .card .preview {
   display: grid;
-  place-items: center;
+  place-items: end center;
+  height: 96px;
   padding: var(--space-2);
   border-radius: var(--radius);
   background: var(--preview);
@@ -121,7 +123,7 @@ output {
 
 .card .preview svg {
   display: block;
-  width: 72px;
+  width: 64px;
 }
 
 .card .name {
