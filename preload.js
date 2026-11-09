@@ -1,0 +1,11 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('mate', {
+  getConfig: () => ipcRenderer.invoke('config'),
+  onConfig: (callback) => ipcRenderer.on('config', (_event, config) => callback(config)),
+  setInteractive: (on) => ipcRenderer.send('interactive', on),
+  setStatus: (text) => ipcRenderer.send('status', text),
+  showMenu: () => ipcRenderer.send('menu'),
+  dragStart: () => ipcRenderer.send('drag-start'),
+  dragEnd: () => ipcRenderer.send('drag-end'),
+});

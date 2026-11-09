@@ -1,0 +1,13 @@
+{
+  "name": "clockout-mate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "퇴근 메이트 — 작업 표시줄/Dock 위에 앉아 퇴근까지 남은 시간을 알려주는 데스크톱 펫",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^45.2.3"
+  }
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <title>퇴근 메이트</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="stage" id="stage" data-state="idle">
+      <div class="bubble" id="bubble"></div>
+      <div class="pet" id="pet">
+        <svg viewBox="0 0 120 100" aria-hidden="true">
+          <g class="ear">
+            <circle cx="30" cy="24" r="13" class="fur" />
+            <circle cx="30" cy="24" r="6" class="pink" />
+          </g>
+          <g class="ear">
+            <circle cx="90" cy="24" r="13" class="fur" />
+            <circle cx="90" cy="24" r="6" class="pink" />
+          </g>
+          <path
+            class="fur"
+            d="M60 14 C90 14 106 36 106 62 C106 86 90 94 60 94 C30 94 14 86 14 62 C14 36 30 14 60 14 Z"
+          />
+          <ellipse class="pink" cx="33" cy="64" rx="6.5" ry="3.8" />
+          <ellipse class="pink" cx="87" cy="64" rx="6.5" ry="3.8" />
+          <ellipse class="eye" cx="45" cy="54" rx="3.2" ry="4.2" />
+          <ellipse class="eye" cx="75" cy="54" rx="3.2" ry="4.2" />
+          <ellipse class="ink" cx="60" cy="61" rx="3.5" ry="2.5" />
+          <path class="line" d="M54 65 q3 4 6 0 q3 4 6 0" />
+          <ellipse class="fur" cx="44" cy="92" rx="10" ry="6.5" />
+          <ellipse class="fur" cx="76" cy="92" rx="10" ry="6.5" />
+        </svg>
+      </div>
+    </div>
+    <script src="pet.js"></script>
+  </body>
+</html>

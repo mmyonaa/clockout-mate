@@ -1,0 +1,177 @@
+:root {
+  --ink: #3a3a3a;
+  --fur: #fffdf8;
+  --pink: #ffb3c1;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+/* 창 전체는 클릭을 통과시키고 캐릭터만 받는다 */
+.stage {
+  position: fixed;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.bubble {
+  position: relative;
+  margin-bottom: 8px;
+  padding: 5px 11px;
+  border: 2px solid var(--ink);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border: solid var(--ink);
+  border-width: 0 2px 2px 0;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+[data-state='soon'] .bubble {
+  background: #fff3c4;
+}
+
+[data-state='done'] .bubble {
+  background: #ffdbe4;
+}
+
+[data-state='overtime'] .bubble {
+  background: #e6e6ec;
+}
+
+.pet {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.pet.dragging {
+  cursor: grabbing;
+}
+
+.pet svg {
+  display: block;
+  width: 90px;
+  transform-origin: 50% 100%;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+.fur {
+  fill: var(--fur);
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.pink {
+  fill: var(--pink);
+}
+
+.ink,
+.eye {
+  fill: var(--ink);
+}
+
+.line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.4s infinite;
+}
+
+.ear {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+[data-state='soon'] .pet svg {
+  animation: bounce 0.7s ease-in-out infinite;
+}
+
+[data-state='done'] .pet svg {
+  animation: bounce 0.45s ease-in-out infinite;
+}
+
+[data-state='soon'] .ear,
+[data-state='done'] .ear {
+  animation: wiggle 0.7s ease-in-out infinite;
+}
+
+/* 야근 중에는 눈을 감고 천천히 숨만 쉰다 */
+[data-state='overtime'] .pet svg {
+  animation-duration: 5s;
+}
+
+[data-state='overtime'] .eye {
+  animation: none;
+  transform: scaleY(0.15);
+}
+
+@keyframes breathe {
+  50% {
+    transform: scaleY(1.03);
+  }
+}
+
+@keyframes bounce {
+  50% {
+    transform: translateY(-6px) scaleY(1.04);
+  }
+}
+
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes wiggle {
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet svg,
+  .eye,
+  .ear {
+    animation: none !important;
+  }
+}
