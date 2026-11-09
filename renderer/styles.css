@@ -81,7 +81,8 @@ body {
 
 .pet svg {
   display: block;
-  width: 90px;
+  /* --wide: 몸보다 넓게 그린 캐릭터가 넓힌 비율(character.css). 없으면 1 */
+  width: calc(90px * var(--wide, 1));
   transform-origin: 50% 100%;
   animation: breathe 3.2s ease-in-out infinite;
 }

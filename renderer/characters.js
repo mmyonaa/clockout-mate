@@ -60,8 +60,9 @@
   };
 
   // top: viewBox 의 위쪽 끝. 귀·뿔이 0 위로 올라가는 만큼 음수로 준다
-  const svg = (id, top, body) =>
-    `<svg class="char char-${id}" viewBox="0 ${top} 120 ${110 - top}" aria-hidden="true">${body}</svg>`;
+  // side: 팔을 옆으로 뻗는 자세처럼 몸보다 넓게 그려야 할 때 좌우로 넓히는 폭. 넓힌 만큼 character.css 의 --wide 로 표시 폭도 키워야 몸 크기가 그대로다
+  const svg = (id, top, body, side = 0) =>
+    `<svg class="char char-${id}" viewBox="${-side} ${top} ${120 + 2 * side} ${110 - top}" aria-hidden="true">${body}</svg>`;
 
   // 모든 캐릭터는 몸이 같고 머리 윗선(귀·뿔)만 다르다. 윤곽은 왼쪽 귀 바깥 밑동 (30,23) 에서 시작해 윗선 → BODY 순으로 한 바퀴 돈다.
   // BODY: 오른쪽 귀 바깥 밑동 (90,23) 에서 머리 옆 → 팔 → 몸 아래 → 반대편 팔 → 머리 옆을 거쳐 시작점으로
@@ -249,35 +250,67 @@
     <path class="line fold" d="M40 76 q8 1.6 16 1.8 M70 77.2 q7 -0.6 13 -2.2" />`,
   );
 
-  // 풍뎅이: 갈색 몸에 흰 얼굴과 배, 머리 위에 끝이 양쪽으로 말려 올라간 뿔
+  // 풍뎅이: 갈색 몸에 흰 얼굴과 배, 머리 위에 끝이 양쪽으로 말려 올라간 뿔.
+  // 가끔 "장수풍뎅이 왕" 이 된다(character/풍뎅이/풍뎅이_왕_2.png). 이때는 평소 그림을 통째로 감추고 따로 그린 전신을 보여 준다:
+  // 평소보다 작은 머리, 넓은 어깨와 가슴·배 근육, 양옆으로 벌려 세운 굵은 팔과 주먹, 가부좌로 앉은 다리.
+  // 얼굴은 가운데에 작게 모인다 — 물결 모양 눈썹과 그 사이의 짧은 선 둘, 고리 모양의 작은 눈, 한쪽으로 올라간 입과 턱 선.
+  // 색은 평소 풍뎅이와 같게 둔다. 치수는 사진의 비율(머리 폭 1 에 팔 끝까지 1.67, 머리 꼭대기에서 바닥까지 1.35)을 이 그림의 높이에 맞춰 줄인 값이다.
+  // 팔이 몸 밖으로 나가므로 viewBox 를 좌우로 14 씩 넓혀 둔다
   const BEETLE_TOP =
     'C40 17 48 15.8 54.5 15.6 C55 12 54 9 51 7.5 C47 6.5 43.5 6 41.5 3 C39.5 -1 42.5 -5.5 46.5 -4.5 C50 -3.5 55 -1 60 -1 C65 -1 70 -3.5 73.5 -4.5 C77.5 -5.5 80.5 -1 78.5 3 C76.5 6 73 6.5 69 7.5 C66 9 65 12 65.5 15.6 C72 15.8 80 17 90 23';
+  // 왕의 팔 한쪽: 어깨 → 팔꿈치 → 손목을 굵은 선으로 긋고(윤곽선용 굵은 선 위에 살색의 가는 선을 겹친다) 끝에 주먹을 올린다.
+  // x: 가운데(60)에서 본 방향. 왼팔은 -1, 오른팔은 1
+  const kingArm = (dir) => {
+    const x = (dx) => n(60 + dir * dx);
+    const arm = `M${x(31)} 66.5 L${x(51)} 73.5 L${x(45.5)} 60`;
+    return `<path class="king-arm-ink" d="${arm}" /><path class="king-arm" d="${arm}" />
+      <rect class="king-skin" x="${n(x(45) - 7.6)}" y="47.6" width="15.2" height="13" rx="5.2" />
+      <path class="king-line" d="M${x(41.2)} 48.8 v4.8 M${x(45)} 48.2 v5.4 M${x(48.8)} 48.8 v4.8 M${x(34)} 65.6 q${n(dir * 6.4)} -5 ${n(dir * 13)} -1.6" />`;
+  };
 
   const beetle = svg(
     'beetle',
     -8,
-    `<path class="fur" d="M30 23 ${BEETLE_TOP} ${BODY}" />
-    ${FEET}
-    <path class="white" d="M60 25 C63 22.6 68 21.6 72 22.2 C85 23.6 93 34 93 47 C93 58 87 66 80 71 C83 78 82 88 76 94 C72 98 66 99 60 99 C54 99 48 98 44 94 C38 88 37 78 40 71 C33 66 27 58 27 47 C27 34 35 23.6 48 22.2 C52 21.6 57 22.6 60 25 Z" />
-    <path class="line" d="M53.4 84 Q60 88.4 66.6 84" />` +
-      face({
+    `<g class="hide-on-king">
+      <path class="fur" d="M30 23 ${BEETLE_TOP} ${BODY}" />
+      ${FEET}
+      <path class="white" d="M60 25 C63 22.6 68 21.6 72 22.2 C85 23.6 93 34 93 47 C93 58 87 66 80 71 C83 78 82 88 76 94 C72 98 66 99 60 99 C54 99 48 98 44 94 C38 88 37 78 40 71 C33 66 27 58 27 47 C27 34 35 23.6 48 22.2 C52 21.6 57 22.6 60 25 Z" />
+      <path class="line" d="M53.4 84 Q60 88.4 66.6 84" />
+      ${face({
         brows: '',
         eye: { dx: 10.6, y: 44, r: 3.5, style: 'dot' },
         blush: { dx: 21.6, y: 51.6, rx: 7.4, ry: 5.4 },
         closed: omega(51.6),
         open: tongueMouth(48.6),
-      }),
+      })}
+    </g>
+    <g class="only-king">
+      <path class="king-skin" d="M42 92 C30 92 19 97 20.5 102.6 C22 108 38 108.6 50 107.2 C54 108.8 66 108.8 70 107.2 C82 108.6 98 108 99.5 102.6 C101 97 90 92 78 92 Z" />
+      <ellipse class="king-skin" cx="54.4" cy="104.6" rx="5.4" ry="3.3" />
+      <ellipse class="king-skin" cx="65.6" cy="104.6" rx="5.4" ry="3.3" />
+      <path class="king-line" d="M51.6 102.6 v1.6 M54 102.2 v1.8 M56.4 102.6 v1.6 M63.6 102.6 v1.6 M66 102.2 v1.8 M68.4 102.6 v1.6" />
+      ${kingArm(-1)}
+      ${kingArm(1)}
+      <path class="king-skin" d="M33 61 C30 70 36 84 42 95 L78 95 C84 84 90 70 87 61 Z" />
+      <path class="king-line" d="M40 74 Q50 81 60 75.4 Q70 81 80 74 M60 75.8 V94.4 M50.5 82 q9.5 2 19 0 M51.5 86.8 q8.5 1.8 17 0 M52.5 91.2 q7.5 1.6 15 0 M41.6 84 q2.4 2.6 3 6 M78.4 84 q-2.4 2.6 -3 6" />
+      <path class="king-skin" d="M25 41 C25 27 39 16.5 55.6 16 C56 13.2 55.2 10.8 53 9.6 C49.9 8.8 47.2 8.4 45.6 6 C44 2.8 46.4 -0.6 49.5 0.2 C52.2 1 56.1 3 60 3 C63.9 3 67.8 1 70.5 0.2 C73.6 -0.6 76 2.8 74.4 6 C72.8 8.4 70.1 8.8 67 9.6 C64.8 10.8 64 13.2 64.4 16 C81 16.5 95 27 95 41 C95 55 80 66 60 66 C40 66 25 55 25 41 Z" />
+      <path class="king-face" d="M60 25.6 C62.4 23.6 66 23.4 69 23.8 C80 25.4 87.5 33 87.5 43 C87.5 54 75.5 62.5 60 62.5 C44.5 62.5 32.5 54 32.5 43 C32.5 33 40 25.4 51 23.8 C54 23.4 57.6 23.6 60 25.6 Z" />
+      <path class="king-line king-face-line" d="M53.4 35.6 q1.4 -1.6 2.8 -0.2 q1.4 1.4 2.8 0.6 M66.6 35.6 q-1.4 -1.6 -2.8 -0.2 q-1.4 1.4 -2.8 -0.2 M59.6 33.6 l0.7 1.5 M61.4 33.4 l0.7 1.5 M57.2 43.2 Q61 47 65 42.6 M59.6 47.4 q1.5 0.9 3 0" />
+      <circle class="king-eye" cx="56.2" cy="39.6" r="1.25" />
+      <circle class="king-eye" cx="65.4" cy="39.4" r="1.25" />
+    </g>`,
+    14,
   );
 
   // act: every 초마다 for 초 동안 하는 짓(남은 시간과 상관없이 항상). name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
-  //   smile: 웃는 얼굴 / crossed: 팔짱 / kyaa: "캬아" 얼굴
+  //   smile: 웃는 얼굴 / crossed: 팔짱 / kyaa: "캬아" 얼굴 / king: 장수풍뎅이 왕
   window.CHARACTERS = {
     hachi: { name: '하치와레', svg: hachi, act: { name: 'smile', every: 6, for: 2 } },
     chii: { name: '치이카와', svg: chii, act: { name: 'smile', every: 6, for: 2 } },
     usagi: { name: '우사기', svg: usagi, act: { name: 'crossed', every: 7, for: 3 } },
     kuri: { name: '쿠리만쥬', svg: kuri, act: { name: 'kyaa', every: 8, for: 3 } },
     rakko: { name: '랏코', svg: rakko },
-    beetle: { name: '풍뎅이', svg: beetle },
+    beetle: { name: '풍뎅이', svg: beetle, act: { name: 'king', every: 9, for: 3 } },
   };
   window.DEFAULT_CHARACTER = 'hachi';
 })();
