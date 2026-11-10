@@ -118,6 +118,8 @@
   transform-box: fill-box;
   transform-origin: center;
   animation: blink 4.4s infinite;
+  /* 여럿이 서 있을 때 동시에 깜빡이지 않게 자리(--nth, pet.js 가 건다)마다 어긋나게 한다 */
+  animation-delay: calc(-1.7s * var(--nth, 0));
 }
 
 .shine {
@@ -264,6 +266,12 @@
 .char-beetle {
   --king-skin: var(--fur);
   --king-ink: var(--ink);
+}
+
+/* 왕이 되는 동안만 다른 캐릭터의 1.5배로 커진다(--grow 는 styles.css 의 .pet svg 가 표시 폭에 곱한다).
+   그림 폭 자체를 키우므로 발끝은 그 자리에 있고 말풍선은 머리 위로 밀려 올라간다. 자리도 같이 넓어져(characters.js 의 slot) 옆 캐릭터와 겹치지 않는다 */
+[data-act='king'] .char-beetle {
+  --grow: 1.5;
 }
 
 .king-skin,

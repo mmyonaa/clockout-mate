@@ -36,10 +36,17 @@ async function save(changes) {
   }
 }
 
+// 고른 캐릭터는 고른 순서대로 왼쪽부터 선다. 맨 왼쪽이 남은 시간을 말하므로 카드에 몇 번째인지 적는다.
+// 하나는 남겨야 하고 maxCharacters 까지만 고를 수 있어서, 그 밖의 선택은 체크박스를 잠가 막는다
 function renderCharacters(selected) {
-  const current = Object.hasOwn(window.CHARACTERS, selected) ? selected : window.DEFAULT_CHARACTER;
+  const picked = selected.filter((id) => Object.hasOwn(window.CHARACTERS, id));
+  if (!picked.length) picked.push(window.DEFAULT_CHARACTER);
+  const full = picked.length >= limits.maxCharacters;
+  $('characters-hint').textContent =
+    `${limits.maxCharacters}명까지 고를 수 있고, 고른 순서대로 왼쪽부터 섭니다. 맨 왼쪽 캐릭터가 남은 시간을 말합니다.`;
   $('characters').replaceChildren(
     ...Object.entries(window.CHARACTERS).map(([id, character]) => {
+      const order = picked.indexOf(id);
       const card = document.createElement('label');
       card.className = 'card';
 
@@ -47,18 +54,30 @@ function renderCharacters(selected) {
       preview.className = 'preview';
       preview.innerHTML = character.svg;
 
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = 'character';
-      radio.value = id;
-      radio.checked = id === current;
-      radio.addEventListener('change', () => save({ character: id }));
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.name = 'characters';
+      check.value = id;
+      check.checked = order >= 0;
+      // 마지막 하나는 뺄 수 없고, 꽉 찼으면 더 넣을 수 없다
+      check.disabled = order >= 0 ? picked.length === 1 : full;
+      check.addEventListener('change', () => {
+        const next = check.checked ? [...picked, id] : picked.filter((other) => other !== id);
+        renderCharacters(next);
+        save({ characters: next });
+      });
 
       const name = document.createElement('span');
       name.className = 'name';
-      name.append(radio, character.name);
+      name.append(check, character.name);
 
       card.append(preview, name);
+      if (order >= 0 && picked.length > 1) {
+        const badge = document.createElement('span');
+        badge.className = 'order';
+        badge.textContent = `${order + 1}번째`;
+        card.append(badge);
+      }
       return card;
     }),
   );
@@ -92,7 +111,7 @@ function checkCheers() {
 
 function fill(settings) {
   limits = settings.limits;
-  renderCharacters(settings.character);
+  renderCharacters(settings.characters);
   offTime.value = settings.offTime;
   startTime.value = settings.startTime;
   workHoursOnly.checked = settings.workHoursOnly;

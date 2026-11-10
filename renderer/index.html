@@ -9,9 +9,13 @@
   </head>
   <body>
     <div class="stage" id="stage" data-state="idle">
-      <div class="bubble"><span class="bubble-text" id="bubble"></span></div>
-      <!-- 캐릭터 그림은 설정에서 고른 것을 pet.js 가 characters.js 에서 꺼내 넣는다 -->
-      <div class="pet" id="pet"></div>
+      <!-- 설정에서 고른 캐릭터마다 .pet 하나씩, pet.js 가 characters.js 의 그림을 꺼내 왼쪽부터 세운다.
+           말풍선은 pet.js 가 맨 왼쪽 .pet 안, 그림 위로 옮겨 넣는다 -->
+      <div class="row" id="row">
+        <div class="bubble-slot" id="bubble-slot">
+          <div class="bubble"><span class="bubble-text" id="bubble"></span></div>
+        </div>
+      </div>
     </div>
     <script src="characters.js"></script>
     <script src="pet.js"></script>

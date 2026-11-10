@@ -368,6 +368,7 @@
   // acts: 캐릭터가 잠깐씩 하는 짓의 목록(남은 시간과 상관없이 항상). 짓마다 every 초짜리 구간을 차례로 차지하고, 그 구간의 앞쪽 for 초 동안 한다.
   // 하나뿐이면 every 초마다 for 초씩 하는 셈이고, 둘이면 번갈아 한다. name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
   //   smile: 웃는 얼굴 / teary: 울먹이는 얼굴 / crossed: 팔짱 / back: 뒷모습 / kyaa: "캬아" 얼굴 / king: 장수풍뎅이 왕
+  // slot: 그 짓을 하는 동안 차지할 자리 폭(px, 1배 기준). 평소 자리(95px)보다 넓으면 옆 캐릭터를 밀어내고 창도 그만큼 넓어진다
   window.CHARACTERS = {
     hachi: {
       name: '하치와레',
@@ -388,7 +389,8 @@
     },
     kuri: { name: '쿠리만쥬', svg: kuri, acts: [{ name: 'kyaa', every: 8, for: 3 }] },
     rakko: { name: '랏코', svg: rakko, acts: [{ name: 'crossed', every: 8, for: 3 }] },
-    beetle: { name: '풍뎅이', svg: beetle, acts: [{ name: 'king', every: 9, for: 3 }] },
+    // 왕은 1.5배로 커져 그림 폭이 167px 이라, 옆 캐릭터와 5px 여백이 남는 자리를 준다
+    beetle: { name: '풍뎅이', svg: beetle, acts: [{ name: 'king', every: 9, for: 3, slot: 172 }] },
   };
   window.DEFAULT_CHARACTER = 'hachi';
 })();

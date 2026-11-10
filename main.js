@@ -2,10 +2,15 @@ const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require
 const fs = require('node:fs');
 const path = require('node:path');
 
-// 크기 1배일 때의 펫 창 크기. 크기 설정을 바꾸면 창과 내용이 같은 배율로 커진다
-const BASE_W = 190;
-// 귀가 가장 긴 캐릭터와 말풍선(약 140px)에, 클릭했을 때 함께 뛰어오르는 높이(16px)만큼의 여유를 더한 값
-const BASE_H = 166;
+// 크기 1배일 때의 펫 창 크기. 크기 설정을 바꾸면 창과 내용이 같은 배율로 커진다.
+// 폭은 캐릭터 한 명마다 SLOT_W 에 양옆 여백 2×PAD_W 를 더한다(styles.css 의 --slot·--pad 와 같은 값).
+// 여백은 맨 왼쪽 캐릭터 위의 말풍선이 창 밖으로 나가지 않을 만큼이다
+const SLOT_W = 95;
+const PAD_W = 45;
+// 가장 큰 모습(1.5배로 커진 풍뎅이 왕, 134px)에 말풍선(29px)과 그 아래 여백(8px), 클릭했을 때 함께 뛰어오르는 높이(16px)를 더한 값
+const BASE_H = 190;
+// 한 번에 세울 수 있는 캐릭터 수
+const MAX_CHARACTERS = 3;
 // 발끝이 바에 걸쳐 보이도록 작업 영역 아래로 내리는 픽셀 수 (1배 기준)
 const OVERLAP = 3;
 const SCALE_MIN = 0.6;
@@ -19,17 +24,19 @@ const DEFAULT_X_RATIO = process.platform === 'darwin' ? 0.62 : 0.93;
 let win;
 let settingsWin = null;
 let tray;
-// cheers 가 비어 있으면 기본 문구를 쓴다
+// cheers 가 비어 있으면 기본 문구를 쓴다. characters 는 왼쪽부터 세울 순서다
 let config = {
   offTime: '18:00',
   startTime: '09:00',
   workHoursOnly: false,
   xRatio: null,
-  character: 'hachi',
+  characters: ['hachi'],
   scale: 1,
   cheers: [],
 };
 let dragTimer = null;
+// 캐릭터가 짓을 하느라 자리를 넓힌 만큼(1배 기준 px). 렌더러가 알려 주며, 창을 양쪽으로 반씩 넓혀 캐릭터 무리의 가운데를 지킨다
+let extraWidth = 0;
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 
@@ -43,8 +50,16 @@ function sanitize(raw) {
   }
   if (typeof raw?.workHoursOnly === 'boolean') out.workHoursOnly = raw.workHoursOnly;
   if (Number.isFinite(raw?.xRatio)) out.xRatio = clamp(raw.xRatio, 0, 1);
-  // 어떤 캐릭터가 있는지는 렌더러(characters.js)가 안다. 여기서는 형식만 보고, 모르는 이름이면 렌더러가 기본 캐릭터를 쓴다
-  if (typeof raw?.character === 'string' && /^[a-z]{1,20}$/.test(raw.character)) out.character = raw.character;
+  // 어떤 캐릭터가 있는지는 렌더러(characters.js)가 안다. 여기서는 형식만 보고, 모르는 이름이면 렌더러가 기본 캐릭터를 쓴다.
+  // 같은 캐릭터를 두 번 적으면 하나로 치고, 하나도 안 남으면 전 값을 그대로 둔다
+  const isId = (value) => typeof value === 'string' && /^[a-z]{1,20}$/.test(value);
+  if (Array.isArray(raw?.characters)) {
+    const ids = [...new Set(raw.characters.filter(isId))].slice(0, MAX_CHARACTERS);
+    if (ids.length) out.characters = ids;
+  } else if (isId(raw?.character)) {
+    // 캐릭터를 하나만 고르던 때의 설정 파일
+    out.characters = [raw.character];
+  }
   if (Number.isFinite(raw?.scale)) out.scale = Math.round(clamp(raw.scale, SCALE_MIN, SCALE_MAX) * 10) / 10;
   if (Array.isArray(raw?.cheers)) {
     out.cheers = raw.cheers
@@ -71,7 +86,10 @@ function saveConfig() {
 
 // 작업 영역 = 화면에서 작업 표시줄/Dock 을 뺀 영역. 그 바닥에 창 바닥을 맞추면 바 위에 앉은 것처럼 보인다
 const workArea = () => screen.getPrimaryDisplay().workArea;
-const winSize = () => ({ width: Math.round(BASE_W * config.scale), height: Math.round(BASE_H * config.scale) });
+// 평소 창 폭. 저장하는 위치(xRatio)는 이 폭을 기준으로 잰다
+const baseWidth = () => Math.round((PAD_W * 2 + SLOT_W * config.characters.length) * config.scale);
+const extraPx = () => Math.round(extraWidth * config.scale);
+const winSize = () => ({ width: baseWidth() + extraPx(), height: Math.round(BASE_H * config.scale) });
 const petY = (area) => area.y + area.height - winSize().height + Math.round(OVERLAP * config.scale);
 const clampX = (x, area) => Math.round(clamp(x, area.x, area.x + area.width - winSize().width));
 
@@ -79,16 +97,17 @@ function place() {
   const area = workArea();
   const { width, height } = winSize();
   const ratio = config.xRatio ?? DEFAULT_X_RATIO;
+  const x = clampX(area.x + ratio * (area.width - baseWidth()) - extraPx() / 2, area);
   // 크기 조절을 막아 둔 창은 플랫폼에 따라 코드로도 크기가 안 바뀌므로 잠깐 풀었다가 다시 막는다
   win.setResizable(true);
-  win.setBounds({ x: clampX(area.x + ratio * (area.width - width), area), y: petY(area), width, height });
+  win.setBounds({ x, y: petY(area), width, height });
   win.setResizable(false);
 }
 
 // 펫 창에 보내는 설정. 응원 문구를 비워 두었으면 기본 문구를 채워서 보낸다
 const petConfig = () => ({
   offTime: config.offTime,
-  character: config.character,
+  characters: config.characters,
   scale: config.scale,
   cheers: config.cheers.length ? config.cheers : DEFAULT_CHEERS,
 });
@@ -103,11 +122,17 @@ const settingsState = () => ({
   offTime: config.offTime,
   startTime: config.startTime,
   workHoursOnly: config.workHoursOnly,
-  character: config.character,
+  characters: config.characters,
   scale: config.scale,
   cheers: config.cheers,
   defaultCheers: DEFAULT_CHEERS,
-  limits: { scaleMin: SCALE_MIN, scaleMax: SCALE_MAX, maxCheers: MAX_CHEERS, maxCheerLength: MAX_CHEER_LENGTH },
+  limits: {
+    scaleMin: SCALE_MIN,
+    scaleMax: SCALE_MAX,
+    maxCheers: MAX_CHEERS,
+    maxCheerLength: MAX_CHEER_LENGTH,
+    maxCharacters: MAX_CHARACTERS,
+  },
   autoLaunch: autoLaunch(),
 });
 
@@ -300,8 +325,12 @@ if (!app.requestSingleInstanceLock()) {
       clearInterval(dragTimer);
       dragTimer = null;
       const area = workArea();
-      config.xRatio = (win.getPosition()[0] - area.x) / Math.max(area.width - winSize().width, 1);
+      config.xRatio = (win.getPosition()[0] + extraPx() / 2 - area.x) / Math.max(area.width - baseWidth(), 1);
       saveConfig();
+    });
+    ipcMain.on('extra-width', (_event, px) => {
+      extraWidth = Number.isFinite(px) ? clamp(px, 0, 500) : 0;
+      if (!dragTimer) place();
     });
   });
 }
