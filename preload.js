@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('mate', {
   showMenu: () => ipcRenderer.send('menu'),
   dragStart: () => ipcRenderer.send('drag-start'),
   dragEnd: () => ipcRenderer.send('drag-end'),
+  setExtraWidth: (px) => ipcRenderer.send('extra-width', px),
   // 설정 창
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (changes) => ipcRenderer.invoke('settings:set', changes),
