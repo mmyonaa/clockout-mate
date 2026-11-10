@@ -370,7 +370,7 @@
   // 하나뿐이면 every 초마다 for 초씩 하는 셈이고, 둘이면 번갈아 한다. name 이 캐릭터 요소의 data-act 로 걸리고, 모습은 character.css 가 바꾼다
   //   smile: 웃는 얼굴 / teary: 울먹이는 얼굴 / crossed: 팔짱 / back: 뒷모습 / kyaa: "캬아" 얼굴 / king: 장수풍뎅이 왕
   // slot: 그 짓을 하는 동안 차지할 자리 폭(px, 1배 기준). 평소 자리(95px)보다 넓으면 옆 캐릭터를 밀어내고 창도 그만큼 넓어진다
-  window.CHARACTERS = {
+  const CHARACTERS = {
     hachi: {
       name: '하치와레',
       svg: hachi,
@@ -393,5 +393,9 @@
     // 왕은 1.5배로 커져 그림 폭이 167px 이라, 옆 캐릭터와 5px 여백이 남는 자리를 준다
     beetle: { name: '풍뎅이', svg: beetle, acts: [{ name: 'king', every: 9, for: 3, slot: 172 }] },
   };
-  window.DEFAULT_CHARACTER = 'hachi';
+  const DEFAULT_CHARACTER = 'hachi';
+
+  // 펫 창·설정 창에서는 전역 변수로 쓰고, 메인 프로세스와 테스트는 require 로 불러 캐릭터 id 를 확인한다
+  if (typeof module === 'object') module.exports = { CHARACTERS, DEFAULT_CHARACTER };
+  else Object.assign(window, { CHARACTERS, DEFAULT_CHARACTER });
 })();

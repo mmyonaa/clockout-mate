@@ -1,23 +1,28 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  MAX_CHARACTERS,
+  SCALE_MIN,
+  SCALE_MAX,
+  MAX_CHEERS,
+  MAX_CHEER_LENGTH,
+  DEFAULT_CHEERS,
+  clamp,
+  sanitize,
+  inWorkHours,
+} = require('./lib/config');
+const { CHARACTERS } = require('./renderer/characters');
 
 // 크기 1배일 때의 펫 창 크기. 크기 설정을 바꾸면 창과 내용이 같은 배율로 커진다.
-// 폭은 캐릭터 한 명마다 SLOT_W 에 양옆 여백 2×PAD_W 를 더한다(styles.css 의 --slot·--pad 와 같은 값).
+// 폭은 캐릭터 한 명마다 SLOT_W 에 양옆 여백 2×PAD_W 를 더한다. 두 값은 펫 창에도 보내 CSS 의 --slot·--pad 로 건다(정의는 여기 한 곳).
 // 여백은 맨 왼쪽 캐릭터 위의 말풍선이 창 밖으로 나가지 않을 만큼이다
 const SLOT_W = 95;
 const PAD_W = 45;
 // 가장 큰 모습(1.5배로 커진 풍뎅이 왕, 134px)에 말풍선(29px)과 그 아래 여백(8px), 클릭했을 때 함께 뛰어오르는 높이(16px)를 더한 값
 const BASE_H = 190;
-// 한 번에 세울 수 있는 캐릭터 수
-const MAX_CHARACTERS = 3;
 // 발끝이 바에 걸쳐 보이도록 작업 영역 아래로 내리는 픽셀 수 (1배 기준)
 const OVERLAP = 3;
-const SCALE_MIN = 0.6;
-const SCALE_MAX = 2;
-const MAX_CHEERS = 20;
-const MAX_CHEER_LENGTH = 14;
-const DEFAULT_CHEERS = ['조금만 더 힘내요!', '물 한 잔 어때요?', '스트레칭 타임!', '오늘도 잘하고 있어요', '어깨 펴고, 숨 한 번!'];
 // Windows 는 시계 근처(오른쪽), macOS 는 Dock 이 가운데라 가운데에서 살짝 오른쪽
 const DEFAULT_X_RATIO = process.platform === 'darwin' ? 0.62 : 0.93;
 
@@ -38,42 +43,12 @@ let dragTimer = null;
 // 캐릭터가 짓을 하느라 자리를 넓힌 만큼(1배 기준 px). 렌더러가 알려 주며, 창을 양쪽으로 반씩 넓혀 캐릭터 무리의 가운데를 지킨다
 let extraWidth = 0;
 
+const knownIds = Object.keys(CHARACTERS);
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
-
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-// 설정 파일과 설정 창에서 들어오는 값을 같은 규칙으로 거른다. 규칙에 맞는 항목만 돌려준다
-function sanitize(raw) {
-  const out = {};
-  for (const key of ['offTime', 'startTime']) {
-    if (typeof raw?.[key] === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(raw[key])) out[key] = raw[key].padStart(5, '0');
-  }
-  if (typeof raw?.workHoursOnly === 'boolean') out.workHoursOnly = raw.workHoursOnly;
-  if (Number.isFinite(raw?.xRatio)) out.xRatio = clamp(raw.xRatio, 0, 1);
-  // 어떤 캐릭터가 있는지는 렌더러(characters.js)가 안다. 여기서는 형식만 보고, 모르는 이름이면 렌더러가 기본 캐릭터를 쓴다.
-  // 같은 캐릭터를 두 번 적으면 하나로 치고, 하나도 안 남으면 전 값을 그대로 둔다
-  const isId = (value) => typeof value === 'string' && /^[a-z]{1,20}$/.test(value);
-  if (Array.isArray(raw?.characters)) {
-    const ids = [...new Set(raw.characters.filter(isId))].slice(0, MAX_CHARACTERS);
-    if (ids.length) out.characters = ids;
-  } else if (isId(raw?.character)) {
-    // 캐릭터를 하나만 고르던 때의 설정 파일
-    out.characters = [raw.character];
-  }
-  if (Number.isFinite(raw?.scale)) out.scale = Math.round(clamp(raw.scale, SCALE_MIN, SCALE_MAX) * 10) / 10;
-  if (Array.isArray(raw?.cheers)) {
-    out.cheers = raw.cheers
-      .filter((line) => typeof line === 'string')
-      .map((line) => line.trim().slice(0, MAX_CHEER_LENGTH))
-      .filter(Boolean)
-      .slice(0, MAX_CHEERS);
-  }
-  return out;
-}
 
 function loadConfig() {
   try {
-    Object.assign(config, sanitize(JSON.parse(fs.readFileSync(configPath(), 'utf8'))));
+    Object.assign(config, sanitize(JSON.parse(fs.readFileSync(configPath(), 'utf8')), knownIds));
   } catch {
     // 첫 실행이거나 파일이 깨졌으면 기본값으로 시작한다
   }
@@ -110,6 +85,7 @@ const petConfig = () => ({
   characters: config.characters,
   scale: config.scale,
   cheers: config.cheers.length ? config.cheers : DEFAULT_CHEERS,
+  layout: { slot: SLOT_W, pad: PAD_W },
 });
 
 const autoLaunch = () => ({
@@ -136,21 +112,9 @@ const settingsState = () => ({
   autoLaunch: autoLaunch(),
 });
 
-const minutesOf = (time) => {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour * 60 + minute;
-};
-
-// 업무 시간 = 출근 시각부터 퇴근 시각 직전까지. 출근이 퇴근보다 늦거나 같으면 자정을 넘기는 근무로 본다
-function inWorkHours(now = new Date()) {
-  const current = now.getHours() * 60 + now.getMinutes();
-  const [start, off] = [minutesOf(config.startTime), minutesOf(config.offTime)];
-  return start < off ? current >= start && current < off : current >= start || current < off;
-}
-
 // '업무 시간에만 보이기' 를 켰으면 업무 시간 밖에서는 펫 창을 숨긴다(트레이 아이콘은 남는다)
 function applyVisibility() {
-  const show = !config.workHoursOnly || inWorkHours();
+  const show = !config.workHoursOnly || inWorkHours(config.startTime, config.offTime);
   if (show === win.isVisible()) return;
   if (show) {
     win.showInactive();
@@ -181,13 +145,15 @@ function openSettings() {
     settingsWin.focus();
     return;
   }
+  // 내용이 화면보다 길면(작은 화면, 캐릭터를 많이 추가했을 때) 창 안에서 스크롤된다. 높이는 늘리거나 줄일 수 있다
   settingsWin = new BrowserWindow({
     width: 460,
-    height: 760,
+    height: Math.min(760, workArea().height - 40),
+    minWidth: 400,
+    minHeight: 320,
     useContentSize: true,
     title: '퇴근 메이트 설정',
     show: false,
-    resizable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -300,7 +266,7 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.handle('settings:get', settingsState);
     ipcMain.handle('settings:set', (_event, raw) => {
       // 위치는 드래그와 '위치 초기화' 로만 바뀐다
-      const { xRatio, ...changes } = sanitize(raw);
+      const { xRatio, ...changes } = sanitize(raw, knownIds);
       applyChanges(changes);
       return settingsState();
     });

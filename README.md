@@ -4,12 +4,13 @@
 
 ## 실행
 
-Node.js가 필요합니다. 첫 실행 때 Electron 바이너리(약 100MB)를 내려받습니다.
+Node.js 22.12 이상이 필요합니다. Electron 45와 그 다운로더가 이 버전을 요구합니다. 첫 실행 때 Electron 바이너리(약 100MB)를 내려받습니다.
 
 ```bash
 cd clockout-mate
-npm install
+npm ci      # package-lock.json 에 적힌 버전 그대로 설치
 npm start
+npm test    # 설정 검증·남은 시간 계산·캐릭터 정의를 확인 (Electron 없이 Node 만으로 돈다)
 ```
 
 ## 설치 파일 만들기
@@ -80,20 +81,25 @@ macOS에서 실행하면 `dist/clockout-mate-<버전>-arm64.dmg`가 만들어집
 ## 구조
 
 ```
-main.js              창 생성 · 위치 계산 · 트레이 · 설정 검증과 저장
+main.js              창 생성 · 위치 계산 · 트레이 · 설정 저장
 preload.js           렌더러에 노출하는 IPC 다리
+lib/config.js        설정의 한도 · 기본 응원 문구 · 검증 규칙 · 업무 시간 판정
 renderer/
-  characters.js      캐릭터 그림(SVG) 정의. 펫 창과 설정 창이 함께 씀
+  characters.js      캐릭터 그림(SVG) 정의. 펫 창 · 설정 창 · 메인 프로세스 · 테스트가 함께 씀
   character.css      캐릭터의 색 · 선 · 표정 전환
   index.html         펫 창
   styles.css         펫 창의 배치 · 말풍선 · 몸 움직임
-  pet.js             카운트다운 · 캐릭터 세우기 · 클릭/드래그 처리
+  clock.js           남은 시간에 따른 상태와 말풍선 문구 · 짓의 순서
+  pet.js             캐릭터 세우기 · 클릭/드래그 처리 · 매초 다시 그리기
   settings.html      설정 창
   settings.css
   settings.js
+test/                node --test 로 도는 테스트
 scripts/make-icon.js 앱 아이콘 생성
 build/               앱 아이콘 (icon.png · icon.icns)
 ```
+
+`characters.js`와 `clock.js`는 브라우저 스크립트이면서 Node에서 `require`로도 불립니다. 파일 끝에서 `module`이 있으면 내보내고, 없으면 `window`에 겁니다. 렌더러는 보안 설정상 `require`를 쓸 수 없어서 이렇게 둡니다.
 
 ## 동작 원리
 
@@ -103,12 +109,92 @@ build/               앱 아이콘 (icon.png · icon.icns)
 - **클릭 통과**: 창은 기본적으로 마우스를 무시하되 이동 이벤트만 전달받습니다(`setIgnoreMouseEvents(true, { forward: true })`). 포인터가 캐릭터에 올라오면 무시를 풀고, 벗어나면 다시 겁니다.
 - **드래그**: 드래그 중에는 메인 프로세스가 실제 커서 좌표를 직접 읽어 창을 옮깁니다. 창이 움직이는 동안에는 렌더러가 받는 좌표가 흔들리기 때문입니다.
 - **크기**: 창 폭은 캐릭터 한 명당 95px에 양옆 여백 45px씩을 더한 값(1배 기준, 한 명이면 185px)이고, 여백은 맨 왼쪽 캐릭터 위의 말풍선이 창 밖으로 나가지 않을 만큼입니다. 풍뎅이가 왕이 되는 동안은 그 자리가 172px로 넓어지고, 렌더러가 넓어진 만큼을 메인 프로세스에 알려 창도 양쪽으로 반씩 넓힙니다(무리의 가운데는 그대로). 설정한 배율만큼 창 크기를 키우고, 창 안의 내용은 CSS `zoom`으로 같은 배율을 겁니다.
-- **설정**: 설정 창이 바꾼 값을 메인 프로세스가 같은 규칙으로 걸러서(형식·범위) 저장하고 펫 창에 다시 보냅니다. 설정 파일을 직접 고쳐도 같은 규칙을 거칩니다. 캐릭터는 `characters` 배열(왼쪽부터 순서)로 저장하며, 캐릭터를 하나만 고르던 때의 `character` 문자열도 읽어 들입니다.
+- **설정**: 설정 창이 바꾼 값을 메인 프로세스가 같은 규칙(`lib/config.js`의 `sanitize`)으로 걸러서 저장하고 펫 창에 다시 보냅니다. 설정 파일을 직접 고쳐도 같은 규칙을 거칩니다. 규칙에 맞지 않는 항목은 버리고 전 값을 유지합니다. 캐릭터는 `characters` 배열(왼쪽부터 순서)로 저장하고, `characters.js`에 없는 id는 뺍니다. 캐릭터를 하나만 고르던 때의 `character` 문자열도 읽어 들입니다.
 - **캐릭터**: 만화 《치이카와》의 캐릭터 여섯을 참고해 인라인 SVG로 직접 그린 팬아트입니다. 모든 캐릭터가 몸 윤곽을 함께 쓰고 머리 윗선(귀·뿔)·색·무늬·얼굴만 다릅니다. 몸 비율과 표정(웃음·울먹·팔짱·뒷모습·"캬아")은 원작 그림을 재서 맞췄습니다. 참고한 원작 그림은 저작권 때문에 이 저장소에 넣지 않았습니다. 표정은 상태마다 눈과 입을 갈아 끼웁니다. 랏코의 칼은 그리지 않았습니다. 트레이 아이콘은 캐릭터와 상관없이 고양이 실루엣이고, 실행 시 픽셀로 그립니다.
 
 ## 캐릭터 추가하기
 
-`renderer/characters.js`의 `window.CHARACTERS`에 항목을 하나 더하면 설정 창에 자동으로 나타납니다. 몸 윤곽(`BODY`)·발(`feet()`)·얼굴(`face()`)은 공용 조각을 그대로 쓰고, 머리 윗선과 얼굴 수치만 새로 정하면 됩니다. 몸 색 같은 캐릭터 전용 스타일은 `character.css`에 `.char-<id>`로 겁니다. 잠깐씩 하는 짓을 주려면 항목에 `acts: [{ name, every, for }]`를 넣고, 그 이름이 걸렸을 때(`[data-act='<name>']`) 바뀔 모습을 `character.css`에 적습니다. 짓을 여럿 넣으면 각자 `every`초짜리 구간을 차례로 차지하며 번갈아 나옵니다.
+`renderer/characters.js`의 `CHARACTERS`에 항목을 하나 더하면 설정 창에 자동으로 나타납니다. 메인 프로세스도 이 목록으로 설정 파일의 캐릭터 id를 검사하므로 다른 곳은 고칠 필요가 없습니다.
+
+**좌표계.** 모든 캐릭터는 가로 120인 SVG 좌표를 씁니다. 몸 가운데가 x=60이고 발끝이 y=110입니다. 귀나 뿔이 머리 위(y<0)로 솟으면 `svg()`의 두 번째 인자 `top`을 음수로 줘서 위쪽을 넓힙니다.
+
+**공용 조각.** 몸 윤곽(`BODY`)·발(`FEET`)·얼굴(`face()`)은 그대로 가져다 쓰고, 머리 윗선과 얼굴 수치만 새로 정합니다. 귀가 없으면 `PLAIN_TOP`, 다문 입과 벌린 입은 `omega(y)`·`tongueMouth(y)`를 쓸 수 있습니다. 가장 단순한 캐릭터는 이렇게 생겼습니다. `CHARACTERS` 정의 바로 위에 넣습니다.
+
+```js
+// 모찌: 귀 없는 매끈한 머리
+const mochi = svg(
+  'mochi',
+  0,
+  `<path class="fur" d="M30 23 ${PLAIN_TOP} ${BODY}" />
+  ${FEET}` +
+    face({
+      brows: '',
+      eye: { dx: 13.6, y: 44, r: 5 },
+      blush: { dx: 24, y: 52, rx: 7.6, ry: 5.3 },
+      closed: omega(52),
+      open: tongueMouth(51),
+      happyEyes: 'M42 46 Q46 42 50 46 M78 46 Q74 42 70 46',
+    }),
+);
+```
+
+그리고 `CHARACTERS`에 항목을 더합니다. id는 소문자 영문만 씁니다. CSS 클래스와 설정 파일에 그대로 들어가기 때문입니다.
+
+```js
+mochi: { name: '모찌', svg: mochi, acts: [{ name: 'smile', every: 8, for: 2 }] },
+```
+
+**색.** 몸 색 같은 캐릭터 전용 스타일은 `character.css`에 `.char-<id>`로 겁니다. 예를 들어 `.char-mochi { --fur: #fdf6ee; }`입니다.
+
+**짓.** `acts`의 각 항목은 `every`초짜리 구간을 차례로 차지하고, 그 구간의 앞쪽 `for`초 동안 그 짓을 합니다. 짓 이름은 캐릭터 요소의 `data-act`로 걸리고, 바뀔 모습은 `character.css`에 `[data-act='<name>']` 선택자로 적습니다. `smile`은 이미 공용 규칙이 있어서 `happyEyes`만 주면 웃는 얼굴이 됩니다. 짓을 하는 동안 캐릭터가 커진다면 `character.css`에서 `--grow`로 배율을 주고, 항목에 `slot`(1배 기준 자리 폭, px)을 줘서 옆 캐릭터를 밀어냅니다. 펫 창 높이(`main.js`의 `BASE_H`)는 가장 큰 모습에 맞춰져 있으니, 더 큰 모습을 만들면 그 값도 올려야 머리가 잘리지 않습니다.
+
+`npm test`가 id 형식과 짓 정의(`for`가 `every` 이하인지 등)를 확인합니다.
+
+## 고쳐 쓰기
+
+### 자주 바꾸는 값
+
+| 바꾸고 싶은 것 | 위치 |
+|---|---|
+| 임박·퇴근 상태가 되는 시간(기본 10분) | `renderer/clock.js`의 `SOON_MINUTES` · `DONE_MINUTES` |
+| 말풍선 문구("퇴근 42분 전", "퇴근 시간이에요!", "야근 …째") | `renderer/clock.js`의 `status()` |
+| 기본 응원 문구 · 문구 길이와 줄 수 한도 | `lib/config.js`의 `DEFAULT_CHEERS` · `MAX_CHEER_LENGTH` · `MAX_CHEERS` |
+| 한 번에 세울 수 있는 캐릭터 수 | `lib/config.js`의 `MAX_CHARACTERS` |
+| 크기 범위 | `lib/config.js`의 `SCALE_MIN` · `SCALE_MAX` |
+| 처음 설 자리(화면 폭에 대한 비율) | `main.js`의 `DEFAULT_X_RATIO` |
+| 캐릭터 한 명의 자리 폭 · 양옆 여백 | `main.js`의 `SLOT_W` · `PAD_W`. 펫 창이 받아 CSS `--slot` · `--pad`로 겁니다 |
+| 말풍선 색(상태별) | `renderer/styles.css`의 `[data-state=…] .bubble` |
+| 응원 말풍선이 떠 있는 시간 | `renderer/pet.js`의 `CHEER_MS` |
+| 트레이 아이콘 | `main.js`의 `trayIcon()`. 이미지 파일 없이 픽셀로 그립니다. 그림 파일을 쓰려면 이 함수가 `nativeImage.createFromPath(...)`를 돌려주게 바꾸고, 그 파일을 `package.json`의 `build.files`에 넣습니다 |
+
+### 설정 항목 하나 추가하기
+
+설정 값은 메인 프로세스가 갖고, 두 창은 IPC로 받아 씁니다. 항목 하나를 더할 때 거치는 자리는 다음과 같습니다.
+
+1. `main.js`의 `config`에 기본값을 넣습니다.
+2. `lib/config.js`의 `sanitize()`에 형식과 범위를 검사하는 줄을 더합니다. 여기를 거치지 않은 값은 저장되지 않습니다. `test/config.test.js`에 경우를 하나 더해 둡니다.
+3. 설정 창에 보이려면 `main.js`의 `settingsState()`에, 펫 창이 쓰려면 `petConfig()`에 그 값을 싣습니다. 메인 프로세스만 쓰는 값(예: `workHoursOnly`)이면 펫 창에는 보내지 않습니다.
+4. `renderer/settings.html`에 입력란을 만들고, `renderer/settings.js`의 `fill()`에서 값을 채우고, 바뀌면 `save({ 키: 값 })`을 부릅니다.
+5. 펫 창에서 쓰는 값이면 `renderer/pet.js`의 `applyConfig()`에서 받습니다. 설정이 바뀔 때마다 전체가 다시 옵니다.
+
+`preload.js`는 고칠 필요가 없습니다. 설정은 통째로 오가므로 항목이 늘어도 통로는 같습니다.
+
+### 앱 이름을 바꿀 때
+
+- 설정 파일 폴더 이름은 `package.json`의 `productName`을 따릅니다. 이름을 바꾸면 새 폴더에서 시작하므로 기존 설정은 읽히지 않습니다. 옛 `config.json`을 새 폴더로 옮기면 그대로 이어집니다.
+- `build.appId`는 macOS의 번들 식별자이자 Windows의 앱 식별자입니다. 남이 만든 빌드와 같은 앱으로 취급되지 않도록 자기 것으로 바꿉니다.
+- 화면에 보이는 한글 이름(창 제목·트레이 툴팁·설정 창 제목)은 `main.js`와 두 HTML 파일에 직접 적혀 있습니다.
+
+### 개발할 때 알아 둘 것
+
+- **두 번째 실행은 조용히 종료됩니다.** 앱이 하나만 뜨도록 잠가 두었기 때문입니다(`requestSingleInstanceLock`). 설치한 앱이나 다른 체크아웃의 앱이 떠 있으면 `npm start`가 아무것도 띄우지 않고 끝납니다. 그 앱을 끄거나, 다른 데이터 폴더로 실행합니다. 이렇게 하면 설정 파일도 따로 쓰므로 평소 설정이 바뀌지 않습니다.
+
+  ```bash
+  npx electron . --user-data-dir=/tmp/clockout-mate-dev
+  ```
+
+- **펫 창의 개발자 도구.** 펫 창은 포커스를 받지 않고 테두리도 없어서 단축키로 개발자 도구를 열 수 없습니다. `main.js`의 `createWindow()`에서 `win.loadFile(...)` 다음 줄에 `win.webContents.openDevTools({ mode: 'detach' });`를 잠시 넣습니다.
+- **CSP(콘텐츠 보안 정책).** 두 HTML 파일은 `default-src 'self'`로 앱 폴더 안의 파일만 불러옵니다. 그래서 인라인 `<script>`·`<style>`, 외부 이미지·웹폰트는 막힙니다. 캐릭터를 그림 파일로 바꾸거나 웹폰트를 쓰려면 각 HTML의 `<meta http-equiv="Content-Security-Policy">`에 `img-src`·`font-src`를 더합니다. 스크립트에서 `element.style`로 거는 스타일은 막히지 않습니다.
 
 ## 알려진 한계
 
@@ -118,4 +204,10 @@ build/               앱 아이콘 (icon.png · icon.icns)
 - "업무 시간에만 보이기"를 켜면 퇴근 시각에 바로 숨으므로 "퇴근 시간이에요!"와 야근 말풍선은 보이지 않습니다.
 - 바를 자동 숨김으로 쓰면 작업 영역이 화면 전체가 되어 캐릭터가 화면 맨 아래에 섭니다.
 - macOS Dock은 가로 범위를 알 수 있는 공개 API가 없어 높이만 맞춥니다. Dock이 없는 자리에서는 허공에 선 것처럼 보이므로 드래그로 Dock 위에 옮겨 둡니다.
-- 캐릭터가 남의 저작물을 본뜬 팬아트라 개인 용도로만 씁니다. 앱을 공개 배포하려면 직접 만든 캐릭터로 바꿔야 합니다.
+- 캐릭터가 남의 저작물을 본뜬 팬아트라 개인 용도로만 씁니다. 앱을 공개 배포하려면 직접 만든 캐릭터로 바꿔야 합니다. 아래 라이선스 절을 봅니다.
+
+## 라이선스
+
+코드는 [MIT 라이선스](LICENSE)입니다. 고쳐 쓰고 다시 배포해도 됩니다.
+
+다만 캐릭터 그림은 이 라이선스에 들어가지 않습니다. `renderer/characters.js`의 그림과 `renderer/character.css`의 캐릭터별 색, 그리고 그 그림으로 만든 `build/` 아이콘은 만화 《치이카와》(나가노)의 캐릭터를 본뜬 팬아트이고, 원작의 권리는 원작자에게 있습니다. 이 저장소의 작성자가 남에게 줄 수 있는 권리가 아니므로, 앱을 배포하려면 이 캐릭터를 빼고 직접 만든 캐릭터로 바꿔야 합니다. 위 "캐릭터 추가하기"의 예제처럼 공용 몸 윤곽 위에 새 얼굴을 얹으면 됩니다.

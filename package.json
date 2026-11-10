@@ -4,11 +4,16 @@
   "version": "0.1.0",
   "private": true,
   "description": "퇴근 메이트 — 작업 표시줄/Dock 위에 앉아 퇴근까지 남은 시간을 알려주는 데스크톱 펫",
+  "license": "MIT",
   "main": "main.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "electron .",
     "icon": "electron scripts/make-icon.js",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "test": "node --test"
   },
   "build": {
     "appId": "local.clockout-mate",
@@ -16,6 +21,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "lib/**",
       "renderer/**"
     ],
     "mac": {

@@ -171,9 +171,14 @@ workHoursOnly.addEventListener('change', () => {
   save({ workHoursOnly: workHoursOnly.checked });
 });
 
+// 끄는 동안 틱마다 저장하면 설정 파일을 수십 번 쓰므로, 손이 잠깐 멈췄을 때 저장한다. 표시 숫자는 바로 바꾼다
+const SCALE_SAVE_DELAY_MS = 150;
+let scaleTimer = null;
+
 scale.addEventListener('input', () => {
   showScale();
-  save({ scale: Number(scale.value) });
+  clearTimeout(scaleTimer);
+  scaleTimer = setTimeout(() => save({ scale: Number(scale.value) }), SCALE_SAVE_DELAY_MS);
 });
 
 cheers.addEventListener('change', () => {
